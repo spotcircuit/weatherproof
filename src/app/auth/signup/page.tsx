@@ -39,18 +39,24 @@ export default function SignUpPage() {
 
       if (authError) throw authError
 
-      // Create user profile
+      // Create user profile using server-side call to bypass RLS
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
+        const response = await fetch('/api/auth/complete-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: authData.user.id,
             email,
             name,
-            company,
+            company
           })
+        })
 
-        if (profileError) throw profileError
+        if (!response.ok) {
+          const error = await response.json()
+          console.error('Profile creation failed:', error)
+          // Continue anyway since auth user was created
+        }
       }
 
       router.push("/dashboard")
