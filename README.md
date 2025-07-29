@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WeatherProof - Construction Weather Delay Documentation System
 
-## Getting Started
+A legal-grade weather documentation system that automatically tracks, documents, and reports weather-related construction delays to help contractors recover costs through insurance claims and improve project planning.
 
-First, run the development server:
+## Features
+
+- **Multi-Source Weather Tracking**: Integrates NOAA, Weather Underground, and Visual Crossing APIs
+- **Intelligent Delay Detection**: Pre-configured industry-standard thresholds by trade type
+- **Legal Documentation**: Court-admissible reports with multiple source verification
+- **Mobile Field Tools**: Progressive Web App for photo documentation
+- **ROI Dashboard**: Real-time delay cost tracking and savings calculator
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Prisma ORM
+- **Database**: PostgreSQL with TimescaleDB
+- **Authentication**: Supabase Auth
+- **Queue**: Bull + Redis
+- **Storage**: AWS S3
+
+## Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+ (with TimescaleDB extension)
+- Redis
+- Supabase account
+- Weather API keys (NOAA is free, others require accounts)
+
+## Setup Instructions
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/spotcircuit/weatherproof.git
+cd weatherproof/weather-proof
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Set up environment variables
+
+Copy `.env.local` to `.env` and fill in your values:
+
+```bash
+cp .env.local .env
+```
+
+Required environment variables:
+- Supabase credentials
+- Database URL
+- Redis URL
+- Weather API keys
+- AWS S3 credentials (for report storage)
+- Email/SMS credentials (for notifications)
+
+### 4. Set up the database
+
+```bash
+# Install TimescaleDB extension in PostgreSQL
+# https://docs.timescale.com/self-hosted/latest/install/
+
+# Run Prisma migrations
+npx prisma generate
+npx prisma migrate dev --name init
+```
+
+### 5. Set up Supabase Auth
+
+1. Create a new Supabase project
+2. Enable Email authentication
+3. Copy your project URL and anon key to `.env`
+
+### 6. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+weather-proof/
+├── prisma/              # Database schema and migrations
+├── public/              # Static assets
+├── src/
+│   ├── app/            # Next.js app router pages
+│   ├── components/     # React components
+│   ├── hooks/          # Custom React hooks
+│   ├── lib/            # Core libraries and utilities
+│   ├── services/       # Business logic and API integrations
+│   ├── types/          # TypeScript type definitions
+│   └── utils/          # Helper functions
+├── .env.local          # Environment variables template
+└── package.json        # Dependencies and scripts
+```
 
-## Learn More
+## Development Workflow
 
-To learn more about Next.js, take a look at the following resources:
+1. **Database Changes**: Edit `prisma/schema.prisma` and run `npx prisma migrate dev`
+2. **API Routes**: Add new routes in `src/app/api/`
+3. **Components**: Create reusable components in `src/components/`
+4. **Weather Services**: Add weather API integrations in `src/services/weather/`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel (Recommended for frontend)
 
-## Deploy on Vercel
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Database
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Use a managed PostgreSQL service with TimescaleDB:
+- Timescale Cloud
+- Supabase (with TimescaleDB extension)
+- AWS RDS with TimescaleDB
+
+### Background Jobs
+
+Deploy the worker process separately:
+- Railway
+- Render
+- AWS ECS
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
