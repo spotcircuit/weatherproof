@@ -17,7 +17,7 @@ export default function Home() {
             Automatically track, document, and report weather-related delays to recover costs through insurance claims.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link href="/signup">
+            <Link href="/auth/signup">
               <Button size="lg" className="text-lg px-8">
                 Start Free Trial
               </Button>
@@ -136,7 +136,7 @@ export default function Home() {
           <p className="text-xl mb-8 opacity-90">
             Join contractors who are successfully recovering weather delay costs
           </p>
-          <Link href="/signup">
+          <Link href="/auth/signup">
             <Button size="lg" variant="secondary" className="text-lg px-8">
               Get Started Free
             </Button>
