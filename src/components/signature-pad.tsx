@@ -36,7 +36,7 @@ export function SignaturePad({
   }
 
   const handleSign = () => {
-    if (!sigCanvas.current?.isEmpty() && affidavitAccepted) {
+    if (sigCanvas.current && !sigCanvas.current.isEmpty() && affidavitAccepted) {
       const signature = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png')
       onSign(signature, affidavitAccepted)
     } else {

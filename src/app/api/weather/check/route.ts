@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         )
         
         // Prepare result data for n8n
-        const result = {
+        const result: any = {
           projectId: project.id,
           projectName: project.name,
           projectAddress: project.address,

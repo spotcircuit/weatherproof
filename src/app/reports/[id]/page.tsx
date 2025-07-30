@@ -25,8 +25,9 @@ import { format } from "date-fns"
 export default async function ReportViewPage({
   params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createServerClientNext()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -54,7 +55,7 @@ export default async function ReportViewPage({
         phone
       )
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (!report || report.user_id !== user.id) {
@@ -73,7 +74,7 @@ export default async function ReportViewPage({
   }
 
   const reportTypeName = report.report_type.replace(/_/g, ' ').toLowerCase()
-    .replace(/\b\w/g, l => l.toUpperCase())
+    .replace(/\b\w/g, (l: string) => l.toUpperCase())
 
   return (
     <div>

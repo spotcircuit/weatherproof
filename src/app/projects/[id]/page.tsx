@@ -5,8 +5,9 @@ import { ProjectDetailClient } from "./project-detail-client"
 export default async function ProjectDetailPage({
   params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createServerClientNext()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,7 +20,7 @@ export default async function ProjectDetailPage({
   const { data: project } = await supabase
     .from("projects")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (!project || project.user_id !== user.id) {
@@ -30,14 +31,14 @@ export default async function ProjectDetailPage({
   const { data: delayEvents } = await supabase
     .from("delay_events")
     .select("*")
-    .eq("project_id", params.id)
+    .eq("project_id", id)
     .order("start_time", { ascending: false })
 
   // Fetch recent weather readings
   const { data: recentWeather } = await supabase
     .from("weather_readings")
     .select("*")
-    .eq("project_id", params.id)
+    .eq("project_id", id)
     .order("timestamp", { ascending: false })
     .limit(1)
 
@@ -45,7 +46,7 @@ export default async function ProjectDetailPage({
   const { data: reports } = await supabase
     .from("reports")
     .select("*")
-    .eq("project_id", params.id)
+    .eq("project_id", id)
     .order("created_at", { ascending: false })
 
   return (

@@ -28,8 +28,9 @@ import { PhotoGallery } from "@/components/photo-gallery"
 export default async function DelayEventPage({
   params
 }: {
-  params: { id: string; delayId: string }
+  params: Promise<{ id: string; delayId: string }>
 }) {
+  const { id, delayId } = await params
   const supabase = await createServerClientNext()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -52,18 +53,18 @@ export default async function DelayEventPage({
         weather_thresholds
       )
     `)
-    .eq("id", params.delayId)
+    .eq("id", delayId)
     .single()
 
   if (!delayEvent) {
-    redirect(`/projects/${params.id}`)
+    redirect(`/projects/${id}`)
   }
 
   // Fetch weather readings during the delay
   const { data: weatherReadings } = await supabase
     .from("weather_readings")
     .select("*")
-    .eq("project_id", params.id)
+    .eq("project_id", id)
     .gte("timestamp", delayEvent.start_time)
     .lte("timestamp", delayEvent.end_time || new Date().toISOString())
     .order("timestamp", { ascending: true })
@@ -72,7 +73,7 @@ export default async function DelayEventPage({
   const { data: photos } = await supabase
     .from("photos")
     .select("*")
-    .eq("delay_event_id", params.delayId)
+    .eq("delay_event_id", delayId)
     .order("taken_at", { ascending: false })
 
   const duration = delayEvent.duration_hours || 
@@ -86,7 +87,7 @@ export default async function DelayEventPage({
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <Link href={`/projects/${params.id}`}>
+          <Link href={`/projects/${id}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -310,8 +311,8 @@ export default async function DelayEventPage({
             </CardHeader>
             <CardContent className="space-y-6">
               <PhotoUpload
-                delayEventId={params.delayId}
-                projectId={params.id}
+                delayEventId={delayId}
+                projectId={id}
                 userId={user.id}
                 onUploadComplete={() => {
                   // In a real app, we'd refresh the photos

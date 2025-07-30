@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       })),
       weather_thresholds: project.weather_thresholds,
       summary,
-      signature: signatureData
+      signature: signatureData || undefined
     }
     
     let reportUrl = ''

@@ -11,8 +11,9 @@ import { SignReportAction } from "./sign-report-action"
 export default async function SignReportPage({
   params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createServerClientNext()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -37,7 +38,7 @@ export default async function SignReportPage({
         email
       )
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .single()
 
   if (!report || report.user_id !== user.id) {
@@ -46,11 +47,11 @@ export default async function SignReportPage({
 
   // Check if already signed
   if (report.signed_by) {
-    redirect(`/reports/${params.id}`)
+    redirect(`/reports/${id}`)
   }
 
   const reportTypeName = report.report_type.replace(/_/g, ' ').toLowerCase()
-    .replace(/\b\w/g, l => l.toUpperCase())
+    .replace(/\b\w/g, (l: string) => l.toUpperCase())
 
   return (
     <div>
@@ -153,7 +154,7 @@ export default async function SignReportPage({
         {/* Signature Section */}
         <div>
           <SignReportAction
-            reportId={params.id}
+            reportId={id}
             signerName={report.users.name || 'Unknown'}
             signerTitle="Project Manager"
             companyName={report.users.company || 'Unknown Company'}

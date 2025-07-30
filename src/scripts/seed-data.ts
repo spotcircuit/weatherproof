@@ -1,13 +1,30 @@
 // Script to seed database with mock data for testing
-// Run with: npx tsx src/scripts/seed-data.ts
+// Run with: npm run seed
 
 import { createClient } from '@supabase/supabase-js'
 import { addDays, subDays, subHours, addHours } from 'date-fns'
+import * as dotenv from 'dotenv'
+import * as path from 'path'
+
+// Load environment variables
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+
+// Validate environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing required environment variables!')
+  console.error('Please ensure .env.local contains:')
+  console.error('- NEXT_PUBLIC_SUPABASE_URL')
+  console.error('- SUPABASE_SERVICE_ROLE_KEY')
+  process.exit(1)
+}
 
 // Initialize Supabase client with service role key for admin access
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role for admin access
+  supabaseUrl,
+  supabaseServiceKey,
   {
     auth: {
       autoRefreshToken: false,

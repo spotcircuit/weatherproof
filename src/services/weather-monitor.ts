@@ -143,7 +143,7 @@ export class WeatherMonitorService {
           start_time: new Date().toISOString(),
           weather_condition: violations.map(v => v.type).join(', '),
           threshold_violated: violations,
-          affected_activities: this.getAffectedActivities(project.project_type || 'general', violations),
+          affected_activities: this.getAffectedActivities((project as any).project_type || 'general', violations),
           estimated_cost: totalCost,
           labor_hours_lost: hoursInDay,
           crew_size: project.crew_size,
@@ -194,7 +194,7 @@ export class WeatherMonitorService {
             condition: weather.conditions,
             duration: hoursInDay,
             estimatedCost: totalCost,
-            affectedActivities: this.getAffectedActivities(project.project_type || 'general', violations)
+            affectedActivities: this.getAffectedActivities((project as any).project_type || 'general', violations)
           }
         )
       }
