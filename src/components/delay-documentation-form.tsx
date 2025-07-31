@@ -175,7 +175,7 @@ export default function DelayDocumentationForm({
         timestamp: weatherData.timestamp,
         temperature: weatherData.temperature,
         wind_speed: weatherData.windSpeed,
-        wind_direction: weatherData.windDirection,
+        wind_direction: weatherData.windDirection ? Math.round(weatherData.windDirection) : null, // Round to integer
         precipitation: weatherData.precipitation,
         humidity: weatherData.humidity,
         pressure: weatherData.pressure,
