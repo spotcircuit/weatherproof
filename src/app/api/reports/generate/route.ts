@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClientNext } from '@/lib/supabase-server'
-import { reportGenerator } from '@/services/report-generator'
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 
 // This endpoint is called by n8n to generate reports
 export async function POST(request: NextRequest) {
@@ -148,7 +147,8 @@ export async function POST(request: NextRequest) {
     let reportContent = null
     
     if (outputFormat === 'pdf') {
-      // Generate PDF
+      // Generate PDF with dynamic import
+      const { reportGenerator } = await import('@/services/report-generator')
       const pdfBlob = await reportGenerator.generateInsuranceReport(reportData)
       
       // TODO: Upload to S3 or Supabase storage
@@ -158,7 +158,8 @@ export async function POST(request: NextRequest) {
       reportContent = base64
       
     } else if (outputFormat === 'csv') {
-      // Generate CSV
+      // Generate CSV with dynamic import
+      const { reportGenerator } = await import('@/services/report-generator')
       const csv = await reportGenerator.generateCSVReport(reportData)
       reportContent = csv
     }

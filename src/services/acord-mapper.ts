@@ -1,7 +1,7 @@
 // ACORD Form 125 (Property Loss Notice) Mapping Service
 // Maps WeatherProof data to ACORD standard fields for insurance claims
 
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 
 // ACORD 125 Property Loss Notice structure
 interface ACORD125 {

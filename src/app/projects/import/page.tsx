@@ -6,9 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Download, Upload, FileSpreadsheet, CheckCircle, AlertCircle } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  Download, 
+  Upload, 
+  FileSpreadsheet, 
+  CheckCircle, 
+  AlertCircle,
+  Building2,
+  Zap,
+  ArrowRight,
+  FileText,
+  Shield,
+  Clock,
+  TrendingUp
+} from "lucide-react"
 import { createClient } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import NavigationHeader from "@/components/navigation-header"
 
 // CSV template for users to download
 const CSV_TEMPLATE = `project_name,address,city,state,zip,start_date,end_date,project_type,crew_size,hourly_rate
@@ -161,168 +176,350 @@ export default function ProjectImportPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-6 w-6" />
-            Import Projects from CSV
-          </CardTitle>
-          <CardDescription>
-            Bulk import your construction projects from a CSV file or your existing project management tool
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Step 1: Download Template */}
-          <div className="border rounded-lg p-4">
-            <h3 className="font-medium mb-2">Step 1: Download Template</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Download our CSV template and fill it with your project data
-            </p>
-            <Button onClick={downloadTemplate} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Download CSV Template
-            </Button>
+    <>
+      <NavigationHeader />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
+        {/* Header */}
+        <div className="bg-white border-b shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              Import Projects
+            </h1>
+            <p className="text-gray-600 mt-1">Bulk import from CSV or connect your existing CRM</p>
           </div>
+        </div>
 
-          {/* Step 2: Upload File */}
-          <div className="border rounded-lg p-4">
-            <h3 className="font-medium mb-2">Step 2: Upload Your File</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="csv-file">Select CSV File</Label>
-                <Input
-                  id="csv-file"
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="mt-1"
-                />
-              </div>
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <Tabs defaultValue="csv" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+              <TabsTrigger value="csv" className="flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                CSV Import
+              </TabsTrigger>
+              <TabsTrigger value="crm" className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                CRM Integration
+              </TabsTrigger>
+            </TabsList>
 
-              {/* Preview */}
-              {preview.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">Preview (first 5 rows):</h4>
-                  <div className="overflow-x-auto">
-                    <table className="text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Project Name</th>
-                          <th className="text-left p-2">Address</th>
-                          <th className="text-left p-2">Type</th>
-                          <th className="text-left p-2">Start Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.map((row, i) => (
-                          <tr key={i} className="border-b">
-                            <td className="p-2">{row.project_name}</td>
-                            <td className="p-2">{row.address}</td>
-                            <td className="p-2">{row.project_type}</td>
-                            <td className="p-2">{row.start_date}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            <TabsContent value="csv">
+              <Card className="border-0 shadow-xl">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                    Import Projects from CSV
+                  </CardTitle>
+                  <CardDescription>
+                    Bulk import your construction projects from a CSV file
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  {/* Step 1: Download Template */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">Step 1: Download Template</h3>
+                        <p className="text-gray-600 mb-4">
+                          Download our CSV template and fill it with your project data. The template includes all required fields and example data.
+                        </p>
+                        <Button onClick={downloadTemplate} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download CSV Template
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Step 3: Import */}
-          <div className="border rounded-lg p-4">
-            <h3 className="font-medium mb-2">Step 3: Import Projects</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              We'll automatically geocode addresses and apply weather thresholds based on project type
-            </p>
-            <Button 
-              onClick={handleImport} 
-              disabled={!file || importing}
-              className="w-full sm:w-auto"
-            >
-              {importing ? (
-                <>
-                  <Upload className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import Projects
-                </>
-              )}
-            </Button>
-          </div>
+                  {/* Step 2: Upload File */}
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <Upload className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">Step 2: Upload Your File</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="csv-file" className="text-gray-700 font-medium">Select CSV File</Label>
+                            <Input
+                              id="csv-file"
+                              type="file"
+                              accept=".csv"
+                              onChange={handleFileChange}
+                              className="mt-2 border-2 border-dashed hover:border-purple-300 transition-colors"
+                            />
+                          </div>
 
-          {/* Results */}
-          {result && (
-            <div className={`border rounded-lg p-4 ${result.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-              <div className="flex items-start gap-3">
-                {result.failed === 0 ? (
-                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <h4 className="font-medium">Import Complete</h4>
-                  <p className="text-sm mt-1">
-                    Successfully imported {result.success} projects
-                    {result.failed > 0 && `, ${result.failed} failed`}
-                  </p>
-                  {result.errors.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium">Errors:</p>
-                      <ul className="text-sm text-red-600 mt-1">
-                        {result.errors.map((error, i) => (
-                          <li key={i}>• {error}</li>
-                        ))}
-                      </ul>
+                          {/* Preview */}
+                          {preview.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="font-medium mb-3">Preview (first 5 rows):</h4>
+                              <div className="overflow-x-auto bg-white rounded-lg shadow-sm border">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-gray-50 border-b">
+                                    <tr>
+                                      <th className="text-left p-3 font-medium text-gray-700">Project Name</th>
+                                      <th className="text-left p-3 font-medium text-gray-700">Address</th>
+                                      <th className="text-left p-3 font-medium text-gray-700">Type</th>
+                                      <th className="text-left p-3 font-medium text-gray-700">Start Date</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {preview.map((row, i) => (
+                                      <tr key={i} className="border-b hover:bg-gray-50">
+                                        <td className="p-3">{row.project_name}</td>
+                                        <td className="p-3">{row.address}</td>
+                                        <td className="p-3">
+                                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                            {row.project_type}
+                                          </span>
+                                        </td>
+                                        <td className="p-3">{row.start_date}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Import */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">Step 3: Import Projects</h3>
+                        <p className="text-gray-600 mb-4">
+                          We'll automatically geocode addresses and apply weather thresholds based on project type
+                        </p>
+                        <Button 
+                          onClick={handleImport} 
+                          disabled={!file || importing}
+                          className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+                        >
+                          {importing ? (
+                            <>
+                              <Upload className="mr-2 h-4 w-4 animate-spin" />
+                              Importing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Import Projects
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Results */}
+                  {result && (
+                    <div className={`rounded-xl p-6 ${result.failed === 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                      <div className="flex items-start gap-3">
+                        {result.failed === 0 ? (
+                          <CheckCircle className="h-6 w-6 text-green-600 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="h-6 w-6 text-yellow-600 mt-0.5" />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg">Import Complete</h4>
+                          <p className="text-gray-700 mt-1">
+                            Successfully imported {result.success} projects
+                            {result.failed > 0 && `, ${result.failed} failed`}
+                          </p>
+                          {result.errors.length > 0 && (
+                            <div className="mt-3">
+                              <p className="font-medium text-red-700">Errors:</p>
+                              <ul className="text-sm text-red-600 mt-1 space-y-1">
+                                {result.errors.map((error, i) => (
+                                  <li key={i}>• {error}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {result.success > 0 && (
+                            <p className="text-gray-600 mt-3 flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              Redirecting to projects page...
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
-                  {result.success > 0 && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Redirecting to projects page...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Integration Options */}
-          <div className="border-t pt-6">
-            <h3 className="font-medium mb-4">Coming Soon: Direct Integrations</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs font-bold">ST</span>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="crm">
+              <div className="space-y-6">
+                {/* CRM Integration Header */}
+                <Card className="border-0 shadow-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white overflow-hidden">
+                  <CardContent className="p-8">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2">Connect Your CRM</h2>
+                        <p className="text-purple-100">
+                          Sync projects directly from your existing construction management software
+                        </p>
+                      </div>
+                      <Zap className="h-16 w-16 text-white/20" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Benefits */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+                        <Shield className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Secure Sync</h3>
+                      <p className="text-gray-600 text-sm">
+                        OAuth 2.0 authentication ensures your data stays secure during import
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
+                        <Clock className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Real-time Updates</h3>
+                      <p className="text-gray-600 text-sm">
+                        Keep your projects synchronized with automatic daily updates
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
+                        <TrendingUp className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Smart Matching</h3>
+                      <p className="text-gray-600 text-sm">
+                        AI-powered field mapping ensures accurate data transfer
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-                ServiceTitan
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs font-bold">QB</span>
+
+                {/* CRM Options */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-lg">ST</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">ServiceTitan</h3>
+                          <p className="text-gray-600 text-sm mb-4">
+                            Import jobs, customers, and service locations directly from ServiceTitan
+                          </p>
+                          <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                            Connect ServiceTitan
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-lg">QB</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">QuickBooks</h3>
+                          <p className="text-gray-600 text-sm mb-4">
+                            Sync customers and projects from QuickBooks Online or Desktop
+                          </p>
+                          <Button className="w-full bg-green-600 hover:bg-green-700">
+                            Connect QuickBooks
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-lg">BT</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">Buildertrend</h3>
+                          <p className="text-gray-600 text-sm mb-4">
+                            Import projects, schedules, and job sites from Buildertrend
+                          </p>
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                            Connect Buildertrend
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-lg">PD</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">Pipedrive</h3>
+                          <p className="text-gray-600 text-sm mb-4">
+                            Sync deals and organizations as projects from Pipedrive CRM
+                          </p>
+                          <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                            Connect Pipedrive
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                QuickBooks
+
+                {/* More CRMs Coming Soon */}
+                <Card className="border-0 shadow-lg bg-gray-50">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-4">More Integrations Coming Soon</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {['Procore', 'CoConstruct', 'Salesforce', 'HubSpot', 'JobNimbus', 'AccuLynx'].map((crm) => (
+                        <div key={crm} className="px-4 py-2 bg-white rounded-lg border shadow-sm text-sm text-gray-600">
+                          {crm}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-4">
+                      Don't see your CRM? <a href="#" className="text-blue-600 hover:underline">Request an integration</a>
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs font-bold">BT</span>
-                </div>
-                Buildertrend
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs font-bold">PD</span>
-                </div>
-                Pipedrive
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </>
   )
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, FileText, Download, Calendar, DollarSign, Clock } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
+import { format } from 'date-fns/format'
 import { SignaturePad } from "@/components/signature-pad"
 import { SignReportAction } from "./sign-report-action"
 

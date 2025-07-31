@@ -1,9 +1,9 @@
-import { AuthLayout } from '@/components/layout/AuthLayout'
+import AuthenticatedLayout from '@/components/authenticated-layout'
 
 export default function ProjectsLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <AuthLayout>{children}</AuthLayout>
+  return <AuthenticatedLayout>{children}</AuthenticatedLayout>
 }

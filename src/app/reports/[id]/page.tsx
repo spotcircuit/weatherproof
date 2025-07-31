@@ -20,7 +20,7 @@ import {
   Printer
 } from "lucide-react"
 import Link from "next/link"
-import { format } from "date-fns"
+import { format } from 'date-fns/format'
 
 export default async function ReportViewPage({
   params

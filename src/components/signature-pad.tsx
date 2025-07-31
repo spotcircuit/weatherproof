@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, PenTool, RotateCcw, Check } from 'lucide-react'
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 
 interface SignaturePadProps {
   onSign: (signature: string, affidavitAccepted: boolean) => void

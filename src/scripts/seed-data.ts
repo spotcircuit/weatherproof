@@ -2,12 +2,15 @@
 // Run with: npm run seed
 
 import { createClient } from '@supabase/supabase-js'
-import { addDays, subDays, subHours, addHours } from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { subDays } from 'date-fns/subDays'
+import { subHours } from 'date-fns/subHours'
+import { addHours } from 'date-fns/addHours'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
 // Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+dotenv.config({ path: path.resolve(process.cwd(), '.env') })
 
 // Validate environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -429,7 +432,14 @@ async function seedData() {
     `)
     
   } catch (error) {
-    console.error('Error seeding data:', error)
+    console.error('Error seeding data:')
+    if (error instanceof Error) {
+      console.error('Message:', error.message)
+      console.error('Stack:', error.stack)
+    } else {
+      console.error('Unknown error:', JSON.stringify(error, null, 2))
+    }
+    process.exit(1)
   }
 }
 

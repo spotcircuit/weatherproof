@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClientNext } from '@/lib/supabase-server'
 import { acordMapper } from '@/services/acord-mapper'
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 
 export async function POST(request: NextRequest) {
   try {

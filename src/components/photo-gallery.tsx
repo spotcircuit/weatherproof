@@ -5,7 +5,7 @@ import { Trash2, Download, MapPin, Calendar, Smartphone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { photoService } from '@/services/photo-service'
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 
 interface Photo {
   id: string

@@ -1,0 +1,301 @@
+'use client'
+
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Building2 } from "lucide-react"
+
+interface CrewFormModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  memberId?: string
+  memberData?: any
+  onSuccess?: () => void
+}
+
+export default function CrewFormModal({
+  open,
+  onOpenChange,
+  memberId,
+  memberData,
+  onSuccess
+}: CrewFormModalProps) {
+  const supabase = createClient()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [assignedProjects, setAssignedProjects] = useState<any[]>([])
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    role: "",
+    phone: "",
+    email: "",
+    hourlyRate: "",
+    notes: ""
+  })
+
+  useEffect(() => {
+    if (memberData) {
+      setFormData({
+        name: memberData.name || "",
+        role: memberData.role || "",
+        phone: memberData.phone || "",
+        email: memberData.email || "",
+        hourlyRate: memberData.hourly_rate?.toString() || "",
+        notes: memberData.notes || ""
+      })
+    } else {
+      // Reset form when creating new
+      setFormData({
+        name: "",
+        role: "",
+        phone: "",
+        email: "",
+        hourlyRate: "",
+        notes: ""
+      })
+    }
+    
+    // Fetch project assignments if editing
+    if (memberId && open) {
+      fetchProjectAssignments()
+    } else {
+      setAssignedProjects([])
+    }
+  }, [memberData, open, memberId])
+
+  const fetchProjectAssignments = async () => {
+    const { data } = await supabase
+      .from('project_crew_assignments')
+      .select(`
+        project_id,
+        assigned_date,
+        projects (
+          id,
+          name,
+          active
+        )
+      `)
+      .eq('crew_member_id', memberId)
+      .is('unassigned_date', null)
+    
+    setAssignedProjects(data || [])
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+
+      const payload = {
+        user_id: user.id,
+        name: formData.name,
+        role: formData.role,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        hourly_rate: parseFloat(formData.hourlyRate) || 0,
+        notes: formData.notes || null
+      }
+
+      if (memberId) {
+        const { error: updateError } = await supabase
+          .from("crew_members")
+          .update(payload)
+          .eq("id", memberId)
+          .eq("user_id", user.id)
+
+        if (updateError) throw updateError
+      } else {
+        const { error: insertError } = await supabase
+          .from("crew_members")
+          .insert(payload)
+
+        if (insertError) throw insertError
+      }
+
+      onOpenChange(false)
+      if (onSuccess) {
+        onSuccess()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{memberId ? "Edit Crew Member" : "Add Crew Member"}</DialogTitle>
+          <DialogDescription>
+            {memberId ? "Update crew member details" : "Add a new crew member to your team"}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="name">Name*</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="John Smith"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role*</Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Foreman">Foreman</SelectItem>
+                  <SelectItem value="Superintendent">Superintendent</SelectItem>
+                  <SelectItem value="Project Manager">Project Manager</SelectItem>
+                  <SelectItem value="Carpenter">Carpenter</SelectItem>
+                  <SelectItem value="Electrician">Electrician</SelectItem>
+                  <SelectItem value="Plumber">Plumber</SelectItem>
+                  <SelectItem value="Mason">Mason</SelectItem>
+                  <SelectItem value="Laborer">Laborer</SelectItem>
+                  <SelectItem value="Equipment Operator">Equipment Operator</SelectItem>
+                  <SelectItem value="Safety Manager">Safety Manager</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hourlyRate">Hourly Rate ($)*</Label>
+              <Input
+                id="hourlyRate"
+                name="hourlyRate"
+                type="number"
+                step="0.01"
+                value={formData.hourlyRate}
+                onChange={handleChange}
+                placeholder="45.00"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Additional information..."
+                rows={3}
+              />
+            </div>
+            
+            {/* Show current project assignments when editing */}
+            {memberId && assignedProjects.length > 0 && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-blue-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900 mb-2">Currently assigned to:</p>
+                    <div className="space-y-1">
+                      {assignedProjects.map((assignment) => (
+                        <div key={assignment.project_id} className="flex items-center gap-2">
+                          <span className="text-sm text-blue-700">• {assignment.projects.name}</span>
+                          {assignment.projects.active && (
+                            <Badge variant="secondary" className="text-xs">Active</Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : memberId ? "Update Member" : "Add Member"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

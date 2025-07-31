@@ -1,7 +1,9 @@
 // Insurance-grade report generation service
 
-import { jsPDF } from 'jspdf'
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
+
+// Dynamic import for jsPDF to avoid build issues
+let jsPDF: any
 
 interface WeatherEvent {
   date: string

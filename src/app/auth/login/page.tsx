@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase"
@@ -10,15 +10,16 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("demo@weatherproof.app")
+  const [password, setPassword] = useState("demo123456")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [autoLoggingIn, setAutoLoggingIn] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     setLoading(true)
     setError(null)
 
@@ -33,10 +34,18 @@ export default function LoginPage() {
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
+      setAutoLoggingIn(false)
     } finally {
       setLoading(false)
     }
   }
+
+  // Auto-login on component mount
+  useEffect(() => {
+    if (autoLoggingIn) {
+      handleLogin()
+    }
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -49,6 +58,11 @@ export default function LoginPage() {
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
+            {autoLoggingIn && (
+              <div className="bg-blue-50 text-blue-600 p-3 rounded-md text-sm">
+                Logging you in automatically with demo credentials...
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
                 {error}
