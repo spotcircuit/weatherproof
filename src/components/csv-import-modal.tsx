@@ -125,10 +125,12 @@ export default function CSVImportModal({
           const { error } = await supabase
             .from(type)
             .insert(recordWithUser)
-          
+        
           if (error) {
             results.failed++
-            setErrors(prev => [...prev, `Row ${i + 2}: ${error.message}`])
+            console.error(`CSV import row ${i + 2} error:`, error)
+            const errorMsg = error.message || JSON.stringify(error)
+            setErrors(prev => [...prev, `Row ${i + 2}: ${errorMsg}`])
           } else {
             results.successful++
           }
@@ -148,7 +150,16 @@ export default function CSVImportModal({
         }, 2000)
       }
     } catch (error) {
-      setErrors([error instanceof Error ? error.message : 'Import failed'])
+      const errorMessage = error instanceof Error ? error.message : 'Import failed'
+      console.error('CSV import error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        importType: type,
+        recordCount: preview?.length
+      })
+      setErrors([errorMessage])
     } finally {
       setImporting(false)
     }

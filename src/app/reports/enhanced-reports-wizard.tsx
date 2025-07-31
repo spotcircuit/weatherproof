@@ -193,7 +193,18 @@ export default function EnhancedReportsWizard({
         setError(result.error || 'Failed to generate report')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setError(errorMessage)
+      console.error('Enhanced report generation error:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err,
+        stringified: JSON.stringify(err, null, 2),
+        templateId: selectedTemplate?.id,
+        projectId: selectedProject,
+        dateRange,
+        reportOptions
+      })
     } finally {
       setIsGenerating(false)
     }

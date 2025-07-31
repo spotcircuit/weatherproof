@@ -1,0 +1,42 @@
+{
+  "supabase": {
+    "project_id": "kxbqvacdtsddgnxtdkgp",
+    "project_url": "https://kxbqvacdtsddgnxtdkgp.supabase.co",
+    "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4YnF2YWNkdHNkZGdueHRka2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI3MjQ0NzksImV4cCI6MjA0ODMwMDQ3OX0.jfZqR7JEOdZ8cZn-5M2W1vXpCjR2D8nW2PUlc0CWBHE",
+    "dashboard_urls": {
+      "main": "https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp",
+      "database": "https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp/database/tables",
+      "sql_editor": "https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp/sql/new",
+      "auth": "https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp/auth/users",
+      "storage": "https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp/storage/buckets"
+    }
+  },
+  "demo_account": {
+    "email": "demo@weatherproof.app",
+    "password": "Qu!ckWeather$$Demo8"
+  },
+  "tables": {
+    "core": [
+      "projects",
+      "delay_events",
+      "weather_readings",
+      "reports",
+      "crew_members",
+      "equipment"
+    ],
+    "relationships": [
+      "project_crew_assignments",
+      "project_equipment_assignments",
+      "delay_crew_affected",
+      "delay_equipment_affected"
+    ],
+    "support": [
+      "company_settings",
+      "weather_threshold_templates",
+      "alerts",
+      "photos"
+    ]
+  },
+  "version": "1.0",
+  "last_migration": "013_add_missing_delay_columns.sql"
+}

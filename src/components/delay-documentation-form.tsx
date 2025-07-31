@@ -170,7 +170,7 @@ export default function DelayDocumentationForm({
       }
       
       // Save weather reading
-      await supabase.from('weather_readings').insert({
+      const { error: weatherError } = await supabase.from('weather_readings').insert({
         project_id: project.id,
         timestamp: weatherData.timestamp,
         temperature: weatherData.temperature,
@@ -183,23 +183,39 @@ export default function DelayDocumentationForm({
         conditions: weatherData.conditions,
         source: 'NOAA',
         source_station_id: weatherData.station.id,
-        station_distance_miles: weatherData.station.distance,
-        station_name: weatherData.station.name,
-        noaa_observation_url: `https://api.weather.gov/stations/${weatherData.station.id}/observations/latest`,
-        raw_data: weatherData.raw
+        raw_data: {
+          ...weatherData.raw,
+          station_distance_miles: weatherData.station.distance,
+          station_name: weatherData.station.name,
+          noaa_observation_url: `https://api.weather.gov/stations/${weatherData.station.id}/observations/latest`
+        }
       })
+      
+      if (weatherError) {
+        console.error('Weather reading insert error:', weatherError)
+        throw new Error(`Failed to save weather reading: ${weatherError.message || JSON.stringify(weatherError)}`)
+      }
       
       // Create delay event
       const { error: delayError } = await supabase
         .from('delay_events')
         .insert(delayData)
       
-      if (delayError) throw delayError
+      if (delayError) {
+        console.error('Delay event insert error:', delayError)
+        throw new Error(`Failed to save delay event: ${delayError.message || JSON.stringify(delayError)}`)
+      }
       
       if (onSuccess) onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save delay')
-      console.error('Save error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save delay'
+      setError(errorMessage)
+      console.error('Save error:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err,
+        stringified: JSON.stringify(err, null, 2)
+      })
     } finally {
       setLoading(false)
     }

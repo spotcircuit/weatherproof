@@ -60,13 +60,25 @@ Signed electronically on ${new Date().toLocaleString()}`
         })
         .eq('id', reportId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Report signing update error:', error)
+        throw new Error(`Failed to sign report: ${error.message || JSON.stringify(error)}`)
+      }
 
       // Redirect to report view
       router.push(`/reports/${reportId}`)
     } catch (error) {
-      console.error('Error signing report:', error)
-      alert('Failed to sign report. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign report. Please try again.'
+      console.error('Report signing error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        reportId,
+        signerName,
+        companyName
+      })
+      alert(errorMessage)
     } finally {
       setSigning(false)
     }

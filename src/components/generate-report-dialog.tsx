@@ -97,8 +97,18 @@ export function GenerateReportDialog({
         alert(`Failed to generate report: ${data.error}`)
       }
     } catch (error) {
-      console.error('Error generating report:', error)
-      alert('Failed to generate report')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate report'
+      console.error('Report generation error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        reportType,
+        projectId,
+        periodStart,
+        periodEnd
+      })
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }

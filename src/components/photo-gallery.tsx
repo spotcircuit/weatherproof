@@ -41,7 +41,14 @@ export function PhotoGallery({ photos, onPhotoDeleted, canDelete = true }: Photo
         onPhotoDeleted?.(photo.id)
       }
     } catch (error) {
-      console.error('Error deleting photo:', error)
+      console.error('Photo delete error:', {
+        error,
+        message: error instanceof Error ? error.message : 'Failed to delete photo',
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        photoId: photo.id,
+        fileUrl: photo.file_url
+      })
     } finally {
       setDeleting(null)
     }

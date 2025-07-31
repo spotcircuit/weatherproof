@@ -147,14 +147,25 @@ export default function CrewAssignmentsModal({
           assigned_date: new Date().toISOString()
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Crew assignment insert error:', error)
+        throw new Error(`Failed to assign crew member: ${error.message || JSON.stringify(error)}`)
+      }
 
       await fetchCrewData()
       setSelectedCrewId("")
       if (onUpdate) onUpdate()
     } catch (error) {
-      console.error('Error assigning crew:', error)
-      alert('Failed to assign crew member')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to assign crew member'
+      console.error('Crew assignment error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        projectId,
+        selectedCrewId
+      })
+      alert(errorMessage)
     } finally {
       setIsAssigning(false)
     }
@@ -167,13 +178,23 @@ export default function CrewAssignmentsModal({
         .update({ unassigned_date: new Date().toISOString() })
         .eq('id', assignmentId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Crew unassignment update error:', error)
+        throw new Error(`Failed to unassign crew member: ${error.message || JSON.stringify(error)}`)
+      }
 
       await fetchCrewData()
       if (onUpdate) onUpdate()
     } catch (error) {
-      console.error('Error unassigning crew:', error)
-      alert('Failed to unassign crew member')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to unassign crew member'
+      console.error('Crew unassignment error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        assignmentId
+      })
+      alert(errorMessage)
     }
   }
 

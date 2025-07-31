@@ -64,6 +64,29 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+          
+          {/* Survey CTA - Be Part of the Solution */}
+          <div className="mb-8 max-w-2xl mx-auto">
+            <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 rounded-lg p-6 border-2 border-green-200 shadow-md">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-green-800 mb-2">
+                  🌟 Be Part of the Solution
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Help us understand the construction industry's biggest weather challenges. 
+                  Your insights will shape the future of weather delay management.
+                </p>
+                <Link href="/survey">
+                  <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 shadow-lg transform hover:scale-105 transition-all duration-200">
+                    Take Our 2-Minute Survey
+                  </Button>
+                </Link>
+                <p className="text-xs text-green-600 mt-2">
+                  Anonymous • Quick • Helps improve the industry
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />

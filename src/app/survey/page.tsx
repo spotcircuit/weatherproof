@@ -192,8 +192,15 @@ export default function SurveyPage() {
         throw new Error('Failed to submit')
       }
     } catch (error) {
-      console.error('Survey submission error:', error)
-      alert('There was an error submitting your response. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'There was an error submitting your response. Please try again.'
+      console.error('Survey submission error:', {
+        error,
+        message: errorMessage,
+        type: typeof error,
+        stringified: JSON.stringify(error, null, 2),
+        formData: JSON.stringify(formData, null, 2)
+      })
+      alert(errorMessage)
     } finally {
       setIsSubmitting(false)
     }

@@ -156,11 +156,23 @@ export default function ProjectImportPage() {
           active: true
         })
 
-        if (error) throw error
+        if (error) {
+          console.error('Project import insert error:', error)
+          throw new Error(`Failed to import project: ${error.message || JSON.stringify(error)}`)
+        }
         result.success++
       } catch (error) {
         result.failed++
-        result.errors.push(`${project.project_name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Project import error:', {
+          error,
+          message: errorMessage,
+          type: typeof error,
+          stringified: JSON.stringify(error, null, 2),
+          projectName: project.project_name,
+          address: project.address
+        })
+        result.errors.push(`${project.project_name}: ${errorMessage}`)
       }
     }
 

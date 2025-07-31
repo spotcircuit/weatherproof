@@ -138,13 +138,19 @@ export default function ProjectFormModal({
           .eq("id", projectId)
           .eq("user_id", user.id)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('Project update error:', updateError)
+          throw new Error(`Failed to update project: ${updateError.message || JSON.stringify(updateError)}`)
+        }
       } else {
         const { error: insertError } = await supabase
           .from("projects")
           .insert(projectPayload)
 
-        if (insertError) throw insertError
+        if (insertError) {
+          console.error('Project insert error:', insertError)
+          throw new Error(`Failed to create project: ${insertError.message || JSON.stringify(insertError)}`)
+        }
       }
 
       onOpenChange(false)
@@ -155,7 +161,15 @@ export default function ProjectFormModal({
         router.refresh()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const errorMessage = err instanceof Error ? err.message : "An error occurred"
+      setError(errorMessage)
+      console.error('Project form submit error:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err,
+        stringified: JSON.stringify(err, null, 2),
+        operation: projectId ? 'update' : 'create'
+      })
     } finally {
       setLoading(false)
     }

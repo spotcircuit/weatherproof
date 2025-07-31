@@ -85,7 +85,17 @@ export function PhotoUpload({
       setSelectedFiles([])
       setCaptions({})
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed'
+      setError(errorMessage)
+      console.error('Photo upload error:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err,
+        stringified: JSON.stringify(err, null, 2),
+        fileCount: selectedFiles.length,
+        delayEventId,
+        projectId
+      })
     } finally {
       setUploading(false)
       setUploadProgress({})

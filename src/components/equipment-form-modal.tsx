@@ -95,13 +95,19 @@ export default function EquipmentFormModal({
           .eq("id", equipmentId)
           .eq("user_id", user.id)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('Equipment update error:', updateError)
+          throw new Error(`Failed to update equipment: ${updateError.message || JSON.stringify(updateError)}`)
+        }
       } else {
         const { error: insertError } = await supabase
           .from("equipment")
           .insert(payload)
 
-        if (insertError) throw insertError
+        if (insertError) {
+          console.error('Equipment insert error:', insertError)
+          throw new Error(`Failed to create equipment: ${insertError.message || JSON.stringify(insertError)}`)
+        }
       }
 
       onOpenChange(false)
@@ -109,7 +115,16 @@ export default function EquipmentFormModal({
         onSuccess()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const errorMessage = err instanceof Error ? err.message : "An error occurred"
+      setError(errorMessage)
+      console.error('Equipment form submit error:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err,
+        stringified: JSON.stringify(err, null, 2),
+        operation: equipmentId ? 'update' : 'create',
+        equipmentId
+      })
     } finally {
       setLoading(false)
     }

@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { format } from 'date-fns/format'
+import DashboardClient from './dashboard-client'
 
 export default async function DashboardPage() {
   const supabase = await createServerClientNext()
@@ -77,8 +78,8 @@ export default async function DashboardPage() {
     // Fetch reports
     supabase
       .from("reports")
-      .select("*")
-      .eq("user_id", user.id)
+      .select("*, projects!inner(user_id)")
+      .eq("projects.user_id", user.id)
       .order("created_at", { ascending: false }),
     
     // Fetch recent weather readings
@@ -149,86 +150,6 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </div>
-        {/* Quick Actions for Report Generation */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Link href="/reports?action=document-delay">
-              <Card className="border-2 border-transparent hover:border-red-300 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-red-50 to-orange-50">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Document Delay</h3>
-                  <p className="text-sm text-gray-600 mt-1">Quick weather impact tracking</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/reports?action=insurance-claim">
-              <Card className="border-2 border-transparent hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-                    <FileWarning className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Insurance Claim</h3>
-                  <p className="text-sm text-gray-600 mt-1">Generate formal documentation</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/reports">
-              <Card className="border-2 border-transparent hover:border-green-300 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-green-50 to-emerald-50">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                    <FileText className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">View Reports</h3>
-                  <p className="text-sm text-gray-600 mt-1">Access all documentation</p>
-                </CardContent>
-              </Card>
-            </Link>
-            
-            <Link href="/projects">
-              <Card className="border-2 border-transparent hover:border-purple-300 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-purple-50 to-pink-50">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
-                    <Building2 className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Manage Projects</h3>
-                  <p className="text-sm text-gray-600 mt-1">View all project details</p>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-
-        {/* Weather Alert Banner for Active Delays */}
-        {delayEvents.some(d => !d.end_time) && (
-          <Card className="mb-8 border-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 shadow-xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center animate-pulse">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Active Weather Delays</h3>
-                    <p className="text-gray-700">
-                      {delayEvents.filter(d => !d.end_time).length} project{delayEvents.filter(d => !d.end_time).length !== 1 ? 's' : ''} currently experiencing weather delays
-                    </p>
-                  </div>
-                </div>
-                <Link href="/reports?action=document-delay">
-                  <Button className="bg-red-600 hover:bg-red-700 text-white shadow-lg">
-                    Document This Delay
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Stats Overview with enhanced styling */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -324,6 +245,13 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Insurance Claim Workflow Dashboard */}
+        <DashboardClient 
+          projects={projects}
+          delayEvents={delayEvents}
+          reports={reports}
+        />
 
         {/* Recent Alerts with enhanced styling */}
         {alerts && alerts.length > 0 && (
