@@ -1,0 +1,184 @@
+{
+  "systemPrompt": {
+    "role": "construction delay documentation assistant",
+    "description": "Extract structured information from natural language descriptions of construction delays",
+    "outputFormat": {
+      "times": {
+        "type": "object",
+        "fields": {
+          "start": "HH:MM (24-hour format)",
+          "end": "HH:MM (24-hour format)"
+        }
+      },
+      "weather": {
+        "type": "object",
+        "fields": {
+          "conditions": ["Rain", "Wind", "Lightning", "Cold", "Snow", "Heat"],
+          "severity": ["light", "moderate", "severe"]
+        }
+      },
+      "activities": {
+        "type": "array",
+        "examples": ["Concrete Work", "Roofing", "Framing", "Excavation", "Electrical", "Plumbing"]
+      },
+      "crew": {
+        "type": "object",
+        "fields": {
+          "action": ["sent home", "stood down", "reassigned"],
+          "count": "number",
+          "notes": "string"
+        }
+      },
+      "equipment": {
+        "type": "array",
+        "examples": ["Crane", "Excavator", "Concrete Pump", "Scissor Lift", "Generator"]
+      },
+      "materials": {
+        "type": "object",
+        "fields": {
+          "protected": "boolean",
+          "damaged": "boolean",
+          "description": "string"
+        }
+      },
+      "safety": {
+        "type": "array",
+        "examples": ["slip hazard", "visibility", "wind hazard", "electrical hazard"]
+      },
+      "duration": "number (hours)",
+      "summary": "string (one sentence)",
+      "questions": "string[] (clarifying questions)",
+      "confidence": "number (0-100)"
+    },
+    "timeMappings": {
+      "morning": "07:00",
+      "lunch": "12:00",
+      "noon": "12:00",
+      "afternoon": "13:00",
+      "evening": "17:00",
+      "all day": "07:00-15:30"
+    },
+    "clarifyingQuestions": {
+      "missingEndTime": "What time did the delay end?",
+      "missingCrewCount": "How many crew members were affected?",
+      "missingActivities": "What specific activities were stopped?",
+      "missingEquipment": "Was any equipment idle during this time?",
+      "missingMaterialInfo": "Were materials protected from the weather?"
+    }
+  },
+  "weatherThresholds": {
+    "wind": {
+      "roofing": 25,
+      "crane": 30,
+      "general": 35
+    },
+    "temperature": {
+      "concreteLow": 40,
+      "concreteHigh": 90,
+      "generalLow": 20,
+      "generalHigh": 95
+    },
+    "precipitation": {
+      "concrete": 0.1,
+      "roofing": 0.1,
+      "excavation": 0.25,
+      "general": 0.5
+    },
+    "lightning": {
+      "radius": 10,
+      "rule": "30-30 (30 seconds = 6 miles)"
+    }
+  },
+  "constructionActivities": {
+    "Concrete Work": {
+      "keywords": ["concrete", "pour", "slab", "foundation", "footing"],
+      "weatherSensitive": ["rain", "cold", "heat"],
+      "minTemp": 40,
+      "maxTemp": 90
+    },
+    "Roofing": {
+      "keywords": ["roof", "shingle", "flashing", "membrane"],
+      "weatherSensitive": ["rain", "wind", "lightning"],
+      "maxWind": 25
+    },
+    "Framing": {
+      "keywords": ["framing", "frame", "stud", "joist", "truss"],
+      "weatherSensitive": ["wind", "lightning"],
+      "maxWind": 35
+    },
+    "Excavation": {
+      "keywords": ["excavat", "dig", "trench", "grade", "earthwork"],
+      "weatherSensitive": ["rain", "snow"],
+      "maxPrecipitation": 0.25
+    },
+    "Masonry": {
+      "keywords": ["brick", "block", "mortar", "masonry", "stone"],
+      "weatherSensitive": ["rain", "cold"],
+      "minTemp": 40
+    },
+    "Electrical": {
+      "keywords": ["electrical", "wiring", "conduit", "panel"],
+      "weatherSensitive": ["rain", "lightning"]
+    },
+    "Exterior Work": {
+      "keywords": ["siding", "exterior", "facade", "stucco", "painting"],
+      "weatherSensitive": ["rain", "wind", "cold"],
+      "minTemp": 50
+    }
+  },
+  "equipmentTypes": {
+    "Crane": {
+      "keywords": ["crane", "tower crane", "mobile crane"],
+      "maxWind": 30,
+      "standbyRate": 0.7
+    },
+    "Excavator": {
+      "keywords": ["excavator", "trackhoe", "digger"],
+      "standbyRate": 0.5
+    },
+    "Concrete Pump": {
+      "keywords": ["pump", "concrete pump", "boom pump"],
+      "standbyRate": 0.6
+    },
+    "Lift Equipment": {
+      "keywords": ["scissor lift", "boom lift", "manlift", "aerial lift"],
+      "maxWind": 25,
+      "standbyRate": 0.5
+    },
+    "Generator": {
+      "keywords": ["generator", "genset"],
+      "standbyRate": 0.4
+    },
+    "Compressor": {
+      "keywords": ["compressor", "air compressor"],
+      "standbyRate": 0.4
+    }
+  },
+  "insuranceRequirements": {
+    "documentation": {
+      "required": [
+        "Date and time of delay",
+        "Specific weather conditions",
+        "Activities affected",
+        "Individual crew members",
+        "Equipment idle time",
+        "Safety concerns"
+      ],
+      "preferred": [
+        "NOAA verification",
+        "Photos during delay",
+        "Supervisor notes",
+        "Material protection measures"
+      ]
+    },
+    "photoRequirements": {
+      "minimum": 4,
+      "types": [
+        "Sky/weather conditions",
+        "Standing water or weather effects",
+        "Idle crew/equipment",
+        "Protected materials"
+      ]
+    }
+  }
+}
