@@ -7,7 +7,7 @@
 ### Supabase Connection
 - **Project URL**: https://kxbqvacdtsddgnxtdkgp.supabase.co
 - **Dashboard**: https://supabase.com/dashboard/project/kxbqvacdtsddgnxtdkgp
-- **Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4YnF2YWNkdHNkZGdueHRka2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI3MjQ0NzksImV4cCI6MjA0ODMwMDQ3OX0.jfZqR7JEOdZ8cZn-5M2W1vXpCjR2D8nW2PUlc0CWBHE`
+- **Anon Key**: Set in environment variable `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Demo Account
 - **Email**: demo@weatherproof.app

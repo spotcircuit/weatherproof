@@ -38,8 +38,8 @@ Or create `.env.local` with these values:
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://kxbqvacdtsddgnxtdkgp.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4YnF2YWNkdHNkZGdueHRka2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI3MjQ0NzksImV4cCI6MjA0ODMwMDQ3OX0.jfZqR7JEOdZ8cZn-5M2W1vXpCjR2D8nW2PUlc0CWBHE
-SUPABASE_SERVICE_ROLE_KEY=[contact-admin-for-key]
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-anon-key-here]
+SUPABASE_SERVICE_ROLE_KEY=[your-service-role-key-here]
 
 # NOAA Weather API (optional for development)
 NOAA_API_TOKEN=your_noaa_token_here

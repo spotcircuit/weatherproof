@@ -110,9 +110,9 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
                 })}
               </div>
               <div className="mt-4 text-center">
-                <Link href="/reports?action=document-delay">
+                <Link href="/document">
                   <Button className="w-full" variant="outline">
-                    Document New Delay
+                    Document New Event
                   </Button>
                 </Link>
               </div>
@@ -213,10 +213,10 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 When weather impacts your work, document it here to create insurance claims
               </p>
-              <Link href="/reports?action=document-delay">
+              <Link href="/document">
                 <Button>
                   <AlertTriangle className="mr-2 h-4 w-4" />
-                  Document First Delay
+                  Document First Event
                 </Button>
               </Link>
             </CardContent>
