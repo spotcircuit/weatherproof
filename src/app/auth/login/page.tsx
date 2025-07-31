@@ -55,6 +55,14 @@ export default function LoginPage() {
           <CardDescription className="text-center">
             Sign in to your WeatherProof account
           </CardDescription>
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-semibold text-blue-900 mb-2">Demo Account Credentials:</p>
+            <div className="space-y-1 text-sm">
+              <p><span className="font-medium">Email:</span> demo@weatherproof.app</p>
+              <p><span className="font-medium">Password:</span> demo123456</p>
+            </div>
+            <p className="text-xs text-blue-700 mt-2 italic">Auto-login enabled for quick access</p>
+          </div>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">

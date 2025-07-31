@@ -32,6 +32,26 @@ export default function Home() {
             Stop losing money on weather delays. Generate ACORD-compliant insurance reports with one click. 
             Upload photos, sign digitally, and submit directly to insurers.
           </p>
+          {/* Demo Credentials Box */}
+          <div className="mb-6 max-w-lg mx-auto">
+            <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 rounded-lg p-5 border-2 border-amber-300 shadow-md">
+              <p className="text-base font-bold text-amber-900 mb-3 text-center">
+                🎯 Quick Demo Access (Auto-Login Available)
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 text-sm bg-white rounded-md p-3">
+                <div className="text-center sm:text-left">
+                  <span className="text-gray-600">Email:</span>
+                  <span className="font-mono font-semibold text-gray-900 ml-2">demo@weatherproof.app</span>
+                </div>
+                <div className="text-center sm:text-left">
+                  <span className="text-gray-600">Password:</span>
+                  <span className="font-mono font-semibold text-gray-900 ml-2">demo123456</span>
+                </div>
+              </div>
+              <p className="text-xs text-center text-amber-700 mt-2">Click "View Demo" below to auto-login instantly</p>
+            </div>
+          </div>
+          
           <div className="flex flex-col md:flex-row gap-4 justify-center mb-8">
             <Link href="/auth/signup">
               <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-105 transition-all duration-200">
