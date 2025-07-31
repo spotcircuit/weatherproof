@@ -275,8 +275,8 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
     console.log('Loading crew and equipment assignments for project:', selectedProject)
     
     try {
-      // Load crew and equipment in parallel
-      const [crewResponse, equipmentResponse] = await Promise.all([
+      // Load crew and equipment in parallel with error handling
+      const [crewResponse, equipmentResponse] = await Promise.allSettled([
         supabase
           .from('project_crew_assignments')
           .select(`
@@ -307,33 +307,79 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
           .eq('project_id', selectedProject)
       ])
       
-      const { data: crew, error: crewError } = crewResponse
-      const { data: equipment, error: equipError } = equipmentResponse
+      let crew = []
+      let equipment = []
+      let hasErrors = false
       
-      if (crewError) {
-        console.error('Error loading crew:', crewError)
+      // Handle crew response
+      if (crewResponse.status === 'fulfilled') {
+        const { data, error } = crewResponse.value
+        if (error) {
+          console.error('Error loading crew:', error)
+          hasErrors = true
+        } else {
+          crew = data || []
+        }
+      } else {
+        console.error('Failed to load crew - connection error')
+        hasErrors = true
       }
       
-      if (equipError) {
-        console.error('Error loading equipment:', equipError)
+      // Handle equipment response
+      if (equipmentResponse.status === 'fulfilled') {
+        const { data, error } = equipmentResponse.value
+        if (error) {
+          console.error('Error loading equipment:', error)
+          hasErrors = true
+        } else {
+          equipment = data || []
+        }
+      } else {
+        console.error('Failed to load equipment - connection error')
+        hasErrors = true
       }
       
-      // Cache the data
+      // Cache the data even if there were errors
       setProjectAssignmentsCache(prev => ({
         ...prev,
         [selectedProject]: {
-          crew: crew || [],
-          equipment: equipment || [],
+          crew,
+          equipment,
           loaded: true
         }
       }))
       
       console.log('Cached crew/equipment data:', {
-        crewCount: crew?.length || 0,
-        equipmentCount: equipment?.length || 0
+        crewCount: crew.length,
+        equipmentCount: equipment.length
       })
+      
+      // Show toast if there were errors
+      if (hasErrors) {
+        toast({
+          title: "Connection Issue",
+          description: "Unable to load crew/equipment data. Please check your connection.",
+          variant: "destructive"
+        })
+      }
     } catch (error) {
       console.error('Error loading project assignments:', error)
+      
+      // Cache empty data to prevent repeated attempts
+      setProjectAssignmentsCache(prev => ({
+        ...prev,
+        [selectedProject]: {
+          crew: [],
+          equipment: [],
+          loaded: true
+        }
+      }))
+      
+      toast({
+        title: "Loading Error",
+        description: "Failed to load crew and equipment data.",
+        variant: "destructive"
+      })
     }
   }
 
@@ -349,14 +395,12 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
       
       // Check if aiResult has the expected structure
       console.log('AI Result structure:', {
-        hasData: aiResult?.data,
         directTimes: aiResult?.times,
-        dataTimes: aiResult?.data?.times,
         fullResult: aiResult
       })
       
       // Handle both direct response and wrapped response
-      const responseData = aiResult?.data || aiResult
+      const responseData = aiResult
       
       const result = {
         startTime: responseData.times?.start || '',
@@ -364,7 +408,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
         weatherConditions: responseData.weather?.conditions || [],
         activities: responseData.activities || [],
         crewNotes: responseData.summary || text,
-        actions: [],
+        actions: [] as string[],
         equipment: responseData.equipment || [],
         materials: responseData.materials || {},
         safety: responseData.safety || [],
@@ -372,6 +416,101 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
         questions: responseData.questions || [],
         confidence: responseData.confidence || 100,
         summary: responseData.summary || ''
+      }
+      
+      // Calculate end time if we have start time and duration but no end time
+      if (result.startTime && result.duration && !result.endTime) {
+        const startParts = result.startTime.split(':')
+        if (startParts.length === 2) {
+          const startHour = parseInt(startParts[0])
+          const startMinute = parseInt(startParts[1])
+          const totalMinutes = startHour * 60 + startMinute + (result.duration * 60)
+          const endHour = Math.floor(totalMinutes / 60) % 24
+          const endMinute = totalMinutes % 60
+          result.endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`
+        }
+      }
+      
+      // Also check the text for specific time mentions that might be the end time
+      const lowerText = text.toLowerCase()
+      
+      // Parse duration if not already set
+      if (!result.duration) {
+        const durationPatterns = [
+          /(?:worked|lasted?)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*hours?/i,
+          /(?:only\s+)?(?:got\s+)?(\d+(?:\.\d+)?)\s*hours?\s+(?:of\s+)?work/i,
+          /(\d+(?:\.\d+)?)\s*hours?\s+(?:of\s+)?(?:work|working)/i
+        ]
+        
+        for (const pattern of durationPatterns) {
+          const match = text.match(pattern)
+          if (match) {
+            result.duration = parseFloat(match[1])
+            break
+          }
+        }
+      }
+      
+      // First, look for start time patterns if AI didn't get it
+      if (!result.startTime) {
+        const startTimePatterns = [
+          /(?:started|began|commenced)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+          /(?:crew|we|work)\s+(?:started|began)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+          /^(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i
+        ]
+        
+        for (const pattern of startTimePatterns) {
+          const match = text.match(pattern)
+          if (match) {
+            const hour = parseInt(match[1])
+            const minute = match[2] || '00'
+            const meridiem = match[3].toLowerCase()
+            const hour24 = meridiem === 'pm' && hour !== 12 ? hour + 12 : (meridiem === 'am' && hour === 12 ? 0 : hour)
+            result.startTime = `${hour24.toString().padStart(2, '0')}:${minute}`
+            break
+          }
+        }
+      }
+      
+      // Look for patterns like "until 10am", "stopped at 10am", "by 10am"
+      const endTimePatterns = [
+        /until\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+        /stopped?\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+        /by\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+        /(?:weather|wind|rain|storm)\s+(?:started|began|begin|hit)\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+        /(?:heavy\s+)?(?:wind|rain|storm)s?\s+(?:and\s+(?:wind|rain|storm)s?\s+)?(?:started|began|begin|hit)\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i
+      ]
+      
+      for (const pattern of endTimePatterns) {
+        const match = text.match(pattern)
+        if (match) {
+          const hour = parseInt(match[1])
+          const minute = match[2] || '00'
+          const meridiem = match[3].toLowerCase()
+          const hour24 = meridiem === 'pm' && hour !== 12 ? hour + 12 : (meridiem === 'am' && hour === 12 ? 0 : hour)
+          const endTime = `${hour24.toString().padStart(2, '0')}:${minute}`
+          
+          // If this looks like a weather start time and we have a work start time, use it as end time
+          if (pattern.toString().includes('weather|wind|rain|storm') && result.startTime && result.startTime !== endTime) {
+            result.endTime = endTime
+          } else if (!result.endTime) {
+            result.endTime = endTime
+          }
+          break
+        }
+      }
+      
+      // Recalculate end time if we now have duration but still no end time
+      if (result.startTime && result.duration && !result.endTime) {
+        const startParts = result.startTime.split(':')
+        if (startParts.length === 2) {
+          const startHour = parseInt(startParts[0])
+          const startMinute = parseInt(startParts[1])
+          const totalMinutes = startHour * 60 + startMinute + (result.duration * 60)
+          const endHour = Math.floor(totalMinutes / 60) % 24
+          const endMinute = totalMinutes % 60
+          result.endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`
+        }
       }
 
       // Add crew actions
@@ -396,6 +535,26 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
       // Add safety concerns
       if (responseData.safety && responseData.safety.length > 0) {
         result.actions.push('Safety concerns: ' + responseData.safety.join(', '))
+      }
+      
+      // Final check: if start and end time are the same and it looks like a weather event time, fix it
+      if (result.startTime && result.startTime === result.endTime) {
+        // Check if the text mentions an earlier start time
+        const allTimeMatches = [...text.matchAll(/(\d{1,2}):?(\d{2})?\s*(am|pm)/gi)]
+        if (allTimeMatches.length >= 2) {
+          // Convert first time match to 24-hour format
+          const firstMatch = allTimeMatches[0]
+          const hour = parseInt(firstMatch[1])
+          const minute = firstMatch[2] || '00'
+          const meridiem = firstMatch[3].toLowerCase()
+          const hour24 = meridiem === 'pm' && hour !== 12 ? hour + 12 : (meridiem === 'am' && hour === 12 ? 0 : hour)
+          const firstTime = `${hour24.toString().padStart(2, '0')}:${minute}`
+          
+          // If the first time is different from what we have, use it as start time
+          if (firstTime !== result.startTime) {
+            result.startTime = firstTime
+          }
+        }
       }
       
       console.log('Mapped Result:', result)
@@ -575,7 +734,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
     enhanced += "\n\n"
     
     // Add specific prompts based on what's missing
-    const prompts = []
+    const prompts: string[] = []
     
     if (parsedData.questions?.length > 0) {
       parsedData.questions.forEach((q: string) => {
@@ -662,9 +821,19 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
       }
 
       // Calculate duration
-      const durationHours = parsedData.endTime 
+      let durationHours = parsedData.endTime 
         ? (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60)
         : null
+      
+      // If duration is 0 or negative (due to same start/end times), use parsed duration
+      if ((durationHours === 0 || durationHours === null || durationHours < 0) && parsedData.duration) {
+        durationHours = parsedData.duration
+      }
+      
+      // If still no duration but we have affected crew/equipment, use their hours
+      if (!durationHours && parsedData.affectedCrew?.length > 0) {
+        durationHours = parsedData.affectedCrew[0].hours_idled || 8
+      }
       
       // Check if weather thresholds were violated
       const weatherReading = weatherData[format(date, 'yyyy-MM-dd')]
@@ -707,7 +876,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
           project_id: selectedProject,
           start_time: startDateTime.toISOString(),
           end_time: parsedData.endTime ? endDateTime.toISOString() : null,
-          duration_hours: parsedData.endTime ? durationHours : null,
+          duration_hours: durationHours || parsedData.duration || null,
           weather_condition: parsedData.weatherConditions.join(', '),
           temperature: weatherData[format(date, 'yyyy-MM-dd')]?.temperature,
           wind_speed: weatherData[format(date, 'yyyy-MM-dd')]?.wind_speed,
@@ -770,12 +939,45 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
       const totalEquipmentCost = parsedData.affectedEquipment?.reduce((sum: number, e: any) => sum + e.total_cost, 0) || 0
       const totalCost = totalCrewCost + totalEquipmentCost
       
-      // Update delay event with total cost
-      if (delay && totalCost > 0) {
-        await supabase
+      // Update delay event with total cost and breakdown
+      if (delay) {
+        const updateData: any = {
+          total_cost: totalCost,
+          computed_labor_cost: totalCrewCost,
+          computed_equipment_cost: totalEquipmentCost,
+          computed_total_cost: totalCost,
+          crew_size: parsedData.affectedCrew?.length || 0,
+          equipment_idle_cost: totalEquipmentCost,
+          cost_breakdown: {
+            labor: totalCrewCost,
+            equipment: totalEquipmentCost,
+            total: totalCost,
+            crew_details: parsedData.affectedCrew?.map((c: any) => ({
+              name: c.name,
+              role: c.role,
+              hours: c.hours_idled,
+              rate: c.hourly_rate,
+              burden: c.burden_rate,
+              cost: c.total_cost
+            })) || [],
+            equipment_details: parsedData.affectedEquipment?.map((e: any) => ({
+              name: e.name,
+              type: e.type,
+              hours: e.hours_idled,
+              rate: e.hourly_rate,
+              cost: e.total_cost
+            })) || []
+          }
+        }
+        
+        const { error: updateError } = await supabase
           .from('delay_events')
-          .update({ total_cost: totalCost })
+          .update(updateData)
           .eq('id', delay.id)
+          
+        if (updateError) {
+          console.error('Error updating delay costs:', updateError)
+        }
       }
 
       toast({
@@ -1362,14 +1564,14 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                                 let activitiesToKeep = new Set<string>()
                                 
                                 // For each remaining weather condition, add its affected activities
-                                newWeatherConditions.forEach(weatherCond => {
+                                newWeatherConditions.forEach((weatherCond: string) => {
                                   const affected = WEATHER_ACTIVITY_IMPACTS[weatherCond] || []
-                                  affected.forEach(activity => activitiesToKeep.add(activity))
+                                  affected.forEach((activity: string) => activitiesToKeep.add(activity))
                                 })
                                 
                                 // Only keep activities that are still affected by remaining weather conditions
                                 // or that were manually selected (not in any weather mapping)
-                                const newActivities = (parsedData.activities || []).filter(activity => {
+                                const newActivities = (parsedData.activities || []).filter((activity: string) => {
                                   // Keep if affected by remaining weather
                                   if (activitiesToKeep.has(activity)) return true
                                   
@@ -1407,7 +1609,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                   {projectActivities.map(activity => {
                     // Check if this activity is auto-selected by current weather conditions
-                    const isWeatherSelected = (parsedData.weatherConditions || []).some(weather => 
+                    const isWeatherSelected = (parsedData.weatherConditions || []).some((weather: string) => 
                       WEATHER_ACTIVITY_IMPACTS[weather]?.includes(activity)
                     )
                     

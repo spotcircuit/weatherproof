@@ -103,7 +103,7 @@ export default function CrewClient({ crewMembers: initialMembers, stats }: CrewC
   // Filter crew members
   const filteredMembers = crewMembers.filter(member => 
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (member.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -244,10 +244,12 @@ export default function CrewClient({ crewMembers: initialMembers, stats }: CrewC
                     </div>
                     <div>
                       <CardTitle className="text-lg font-bold text-gray-800">{member.name}</CardTitle>
-                      <Badge variant="secondary" className={`mt-1 ${getRoleBadgeColor(member.role)}`}>
-                        <Award className="mr-1 h-3 w-3" />
-                        {member.role}
-                      </Badge>
+                      {member.role && (
+                        <Badge variant="secondary" className={`mt-1 ${getRoleBadgeColor(member.role)}`}>
+                          <Award className="mr-1 h-3 w-3" />
+                          {member.role}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <DropdownMenu>
@@ -298,11 +300,32 @@ export default function CrewClient({ crewMembers: initialMembers, stats }: CrewC
                 
                 {member.activeProjects > 0 && (
                   <div className="pt-3 border-t">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Active Projects</span>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {member.activeProjects}
-                      </Badge>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Active Projects</span>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {member.activeProjects}
+                        </Badge>
+                      </div>
+                      {member.projectAssignments && member.projectAssignments.map((assignment: any) => (
+                        <a
+                          key={assignment.projects.id}
+                          href={`/projects/${assignment.projects.id}`}
+                          className="block p-2 rounded-md border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{assignment.projects.name}</p>
+                              <p className="text-xs text-gray-500">{assignment.projects.address}</p>
+                            </div>
+                            {assignment.projects.project_type && (
+                              <Badge variant="secondary" className="text-xs">
+                                {assignment.projects.project_type}
+                              </Badge>
+                            )}
+                          </div>
+                        </a>
+                      ))}
                     </div>
                   </div>
                 )}

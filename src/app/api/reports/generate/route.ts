@@ -67,9 +67,6 @@ export async function POST(request: NextRequest) {
         .eq('delay_event_id', delay.id)
         .order('taken_at', { ascending: true })
       
-      // Import photoService to format photos
-      const { photoService } = await import('@/services/photo-service')
-      
       delaysWithWeather.push({
         ...delay,
         weather_events: weatherData?.map(w => ({
@@ -81,7 +78,18 @@ export async function POST(request: NextRequest) {
           source: `${w.source} - Station ${w.station_id}`,
           station_distance: w.station_distance
         })) || [],
-        photos: photos ? photoService.formatPhotosForReport(photos) : []
+        photos: photos ? photos.map(photo => ({
+          filename: photo.filename,
+          takenAt: photo.taken_at ? new Date(photo.taken_at).toLocaleString() : 'Unknown',
+          location: photo.latitude && photo.longitude 
+            ? `${photo.latitude.toFixed(6)}, ${photo.longitude.toFixed(6)}`
+            : 'Not available',
+          device: photo.device_make && photo.device_model
+            ? `${photo.device_make} ${photo.device_model}`
+            : 'Unknown device',
+          caption: photo.caption || '',
+          url: photo.file_url
+        })) : []
       })
     }
     

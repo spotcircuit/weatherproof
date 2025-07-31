@@ -28,6 +28,7 @@ import {
 import { format } from 'date-fns/format'
 import { GenerateReportDialog } from "@/components/generate-report-dialog"
 import DelayDocumentationForm from "@/components/delay-documentation-form"
+import InsuranceClaimWizard from "@/components/insurance-claim-wizard"
 
 interface ReportWizardProps {
   projects: any[]
@@ -112,75 +113,33 @@ export default function ReportsWizardClient({ projects, recentDelays, activeDela
   }
 
   if (selectedReportType === 'current-delay') {
-    const selectedProjectData = projects.find(p => p.id === selectedProject)
-    
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => {
-              setSelectedReportType(null)
-              setSelectedProject(null)
-            }}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <h2 className="text-2xl font-bold">Document Current Weather Delay</h2>
-        </div>
-
-        {!selectedProject ? (
-          <Card className="border-2 border-red-200 bg-red-50/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                Quick Delay Documentation
-              </CardTitle>
-              <CardDescription>
-                Select a project to document weather-related work stoppage
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Select Project</label>
-                <div className="grid gap-3">
-                  {projects.filter(p => p.active).map(project => (
-                    <button
-                      key={project.id}
-                      onClick={() => setSelectedProject(project.id)}
-                      className="p-4 rounded-lg border-2 text-left transition-all border-gray-200 hover:border-red-300"
-                    >
-                      <div className="font-medium">{project.name}</div>
-                      <div className="text-sm text-gray-600">{project.address}</div>
-                      {activeDelays.some(d => d.project_id === project.id) && (
-                        <Badge variant="destructive" className="mt-2">Active Delay</Badge>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <DelayDocumentationForm
-            project={selectedProjectData}
-            onSuccess={() => {
-              setSelectedProject(null)
-              setSelectedReportType(null)
-              // Could add a success toast here
-            }}
-            onCancel={() => setSelectedProject(null)}
-          />
-        )}
-      </div>
-    )
+    // Redirect to the document page instead
+    window.location.href = '/document'
+    return null
   }
 
   if (selectedReportType === 'insurance-claim') {
+    if (selectedProject) {
+      const projectData = projects.find(p => p.id === selectedProject)
+      const projectDelays = recentDelays.filter(d => d.project_id === selectedProject)
+      
+      return (
+        <InsuranceClaimWizard
+          projectId={selectedProject}
+          project={projectData}
+          delays={projectDelays}
+          onComplete={() => {
+            setSelectedProject(null)
+            setSelectedReportType(null)
+            // Refresh or show success
+          }}
+          onCancel={() => setSelectedProject(null)}
+        />
+      )
+    }
+    
     return (
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6 px-6 py-8">
         <div className="flex items-center gap-4 mb-6">
           <Button 
             variant="ghost" 
@@ -190,7 +149,7 @@ export default function ReportsWizardClient({ projects, recentDelays, activeDela
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <h2 className="text-2xl font-bold">Insurance Claim Wizard</h2>
+          <h2 className="text-2xl font-bold">Select Project for Insurance Claim</h2>
         </div>
 
         <div className="grid gap-6">
@@ -199,7 +158,9 @@ export default function ReportsWizardClient({ projects, recentDelays, activeDela
             const totalHours = data.delays.reduce((sum: number, d: any) => sum + (d.duration_hours || 0), 0)
             
             return (
-              <Card key={projectId} className="overflow-hidden">
+              <Card key={projectId} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => setSelectedProject(projectId)}
+              >
                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4">
                   <h3 className="text-lg font-semibold">{data.project.name}</h3>
                   <p className="text-sm opacity-90">{data.project.address}</p>
@@ -244,12 +205,8 @@ export default function ReportsWizardClient({ projects, recentDelays, activeDela
 
                   <Button 
                     className="w-full"
-                    onClick={() => {
-                      setSelectedProject(projectId)
-                      setShowGenerateDialog(true)
-                    }}
                   >
-                    Generate Insurance Claim
+                    Start Insurance Claim Process
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
@@ -263,7 +220,7 @@ export default function ReportsWizardClient({ projects, recentDelays, activeDela
 
   // Default view - Report type selection
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8 px-6 py-8">
       {/* Quick Stats */}
       {(quickStats.activeDelays > 0 || quickStats.unverifiedDelays > 0) && (
         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-xl shadow-xl">

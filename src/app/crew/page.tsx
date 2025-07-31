@@ -18,16 +18,30 @@ export default async function CrewPage() {
     .eq("user_id", user.id)
     .order("name", { ascending: true })
 
-  // Fetch assignments count for each crew member
+  // Fetch assignments with project details for each crew member
   const crewWithAssignments = await Promise.all(
     (crewMembers || []).map(async (member) => {
-      const { count } = await supabase
+      const { data: assignments } = await supabase
         .from("project_crew_assignments")
-        .select("*", { count: 'exact', head: true })
+        .select(`
+          *,
+          projects (
+            id,
+            name,
+            address,
+            active,
+            project_type
+          )
+        `)
         .eq("crew_member_id", member.id)
         .is("unassigned_date", null)
+        .eq("projects.active", true)
       
-      return { ...member, activeProjects: count || 0 }
+      return { 
+        ...member, 
+        activeProjects: assignments?.length || 0,
+        projectAssignments: assignments || []
+      }
     })
   )
 

@@ -80,7 +80,10 @@ export async function callN8nWebhook<TInput, TOutput>(
 // Specific webhook callers
 export const n8nWebhooks = {
   async parseDelay(description: string, date?: Date) {
-    return callN8nWebhook(
+    return callN8nWebhook<
+      { description: string; date?: string },
+      import('@/services/n8n-delay-parser').ParsedDelayInfo
+    >(
       {
         description,
         date: date?.toISOString()

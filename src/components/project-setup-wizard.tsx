@@ -155,7 +155,7 @@ export function ProjectSetupWizard({ onComplete, initialData }: ProjectSetupWiza
       
       // Create project activities
       if (project && formData.activities.length > 0) {
-        const defaultActivities = CONTRACTOR_TYPE_ACTIVITIES[formData.contractor_type] || []
+        const defaultActivities = CONTRACTOR_TYPE_ACTIVITIES[formData.contractor_type as ContractorType] || []
         const activitiesData = formData.activities.map(activity => ({
           project_id: project.id,
           activity_name: activity,
@@ -348,7 +348,7 @@ export function ProjectSetupWizard({ onComplete, initialData }: ProjectSetupWiza
         )
         
       case 4:
-        const defaultActivities = CONTRACTOR_TYPE_ACTIVITIES[formData.contractor_type] || []
+        const defaultActivities = CONTRACTOR_TYPE_ACTIVITIES[formData.contractor_type as ContractorType] || []
         const customActivities = formData.activities.filter(a => !defaultActivities.includes(a))
         
         return (

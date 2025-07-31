@@ -36,7 +36,7 @@ export function ProjectBulkUpload({ onComplete }: ProjectBulkUploadProps) {
     const data = []
 
     for (let i = 1; i < lines.length; i++) {
-      const values = []
+      const values: string[] = []
       let current = ''
       let inQuotes = false
 

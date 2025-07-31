@@ -26,6 +26,8 @@ const nextConfig = {
     // Better error handling
     clientRouterFilter: true,
     clientRouterFilterRedirects: true,
+    // Missing suspense configuration
+    missingSuspenseWithCSRBailout: false,
   },
   
   // Handle Windows path issues

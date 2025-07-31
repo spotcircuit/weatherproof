@@ -124,3 +124,13 @@ ehthumbs_vista.db
 .directory
 .Trash-*
 .nfs*
+
+# Development SQL files (keep only in supabase/migrations)
+/*.sql
+
+# Local development files
+/docs/ai-parsing-examples.md
+/docs/n8n-system-prompt.md
+
+# Note: src/scripts are intentionally tracked as they contain
+# development utilities and use environment variables (no secrets)

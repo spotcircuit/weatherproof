@@ -542,14 +542,13 @@ export function ProjectDetailClient({
             {delayEvents && delayEvents.length > 0 ? (
               <div className="space-y-3">
                 {delayEvents.map((delay) => (
-                  <Link 
-                    key={delay.id} 
-                    href={`/projects/${project.id}/delays/${delay.id}`}
-                    className="block"
-                  >
-                    <div className="border rounded-lg p-4 hover:shadow-lg hover:border-blue-200 cursor-pointer transition-all duration-200">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                  <div key={delay.id} className="border rounded-lg p-4 hover:shadow-lg hover:border-blue-200 transition-all duration-200">
+                    <div className="flex items-start justify-between">
+                      <Link 
+                        href={`/projects/${project.id}/delays/${delay.id}`}
+                        className="flex-1"
+                      >
+                        <div>
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium">
                               {format(new Date(delay.start_time), 'PPP')}
@@ -577,10 +576,10 @@ export function ProjectDetailClient({
                             </span>
                           </div>
                         </div>
-                        <ExternalLink className="h-4 w-4 text-gray-400" />
-                      </div>
+                      </Link>
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             ) : (

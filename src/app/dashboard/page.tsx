@@ -90,19 +90,37 @@ export default async function DashboardPage() {
       .order("timestamp", { ascending: false })
       .limit(10),
     
-    // Fetch crew members
+    // Fetch crew members with assignment counts
     supabase
       .from("crew_members")
-      .select("*")
+      .select(`
+        *,
+        project_crew_assignments!left(
+          project_id,
+          projects!inner(
+            name,
+            active
+          )
+        )
+      `)
       .eq("user_id", user.id)
-      .eq("status", "active"),
+      .eq("active", true),
     
-    // Fetch equipment
+    // Fetch equipment with assignment counts
     supabase
       .from("equipment")
-      .select("*")
+      .select(`
+        *,
+        project_equipment_assignments!left(
+          project_id,
+          projects!inner(
+            name,
+            active
+          )
+        )
+      `)
       .eq("user_id", user.id)
-      .eq("status", "available"),
+      .eq("active", true),
     
     // Fetch projects with upcoming deadlines
     supabase
@@ -418,12 +436,14 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Available Today</span>
+                  <span className="text-sm text-gray-600">Total Crew</span>
                   <span className="font-semibold text-indigo-700">{crewMembers.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Crew</span>
-                  <span className="font-medium text-gray-700">{crewMembers.length + 5}</span>
+                  <span className="text-sm text-gray-600">Assigned to Projects</span>
+                  <span className="font-medium text-gray-700">
+                    {crewMembers.filter(c => c.project_crew_assignments && c.project_crew_assignments.length > 0).length}
+                  </span>
                 </div>
                 <Link href="/crew">
                   <Button variant="outline" size="sm" className="w-full mt-3 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
@@ -446,12 +466,14 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Available</span>
+                  <span className="text-sm text-gray-600">Total Equipment</span>
                   <span className="font-semibold text-amber-700">{equipment.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">In Use</span>
-                  <span className="font-medium text-gray-700">3</span>
+                  <span className="text-sm text-gray-600">Assigned to Projects</span>
+                  <span className="font-medium text-gray-700">
+                    {equipment.filter(e => e.project_equipment_assignments && e.project_equipment_assignments.length > 0).length}
+                  </span>
                 </div>
                 <Link href="/equipment">
                   <Button variant="outline" size="sm" className="w-full mt-3 border-amber-200 text-amber-700 hover:bg-amber-50">

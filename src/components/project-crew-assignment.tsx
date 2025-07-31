@@ -97,6 +97,7 @@ export default function ProjectCrewAssignment({ projectId }: { projectId: string
       .from('crew_members')
       .select('*')
       .eq('user_id', user.id)
+      .eq('active', true)
       .order('name')
 
     if (!error && data) {

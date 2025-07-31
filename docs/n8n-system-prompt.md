@@ -33,11 +33,17 @@ Time mappings to use:
 IMPORTANT time context rules:
 - "sent home at [TIME]" or "sent crew home at [TIME]" = END TIME (when work stopped)
 - "called it at [TIME]" or "stopped at [TIME]" = END TIME
-- "started at [TIME]" or "began at [TIME]" = START TIME
-- "rain started at [TIME]" or "wind began at [TIME]" = START TIME (when delay began)
+- "work started at [TIME]", "we started at [TIME]", "crew started at [TIME]" = START TIME (when work began)
+- "rain/wind/weather started at [TIME]" or "rain/wind began at [TIME]" = END TIME if work had already started
+- If text mentions both work start time and weather start time, use work time as START and weather time as END
+- "worked for X hours" = calculate END TIME from START TIME + duration
 - If only one time is mentioned with "sent home", "stopped", or "ended" context, use it as END TIME
 - If no start time is mentioned but end time is clear, assume start was normal work hours (07:00)
 - Default work day if not specified: 07:00 - 15:30
+
+CRITICAL: When the text pattern is "we started at [TIME1] and [WEATHER] began at [TIME2]":
+- START TIME = TIME1 (when work began)
+- END TIME = TIME2 (when weather forced stop)
 
 SPECIAL CASE: If user says "sent crew home" or "had to send crew home" WITHOUT a specific time:
 - Add a clarifying question: "What time were the crew sent home?"
@@ -78,6 +84,8 @@ Example input 4: "High winds all day, sent crew home at 12:00pm"
 Example input 5: "Started at 7am but rain began at 9:30am, called it quits at 11am"
 
 Example input 6: "Heavy rain started at 10am, had to send the crew home"
+
+Example input 7: "we started at 7am and heavy winds and rain began at 11am, after that we sent everyone home"
 
 Example output (for input 1):
 {
@@ -120,6 +128,21 @@ Example output (for input 5 - multiple times with context):
   "summary": "Heavy rain at 9am prevented foundation pour",
   "questions": ["What time did work stop?", "How many crew members were affected?", "Was the rebar protected?"],
   "confidence": 70
+}
+
+Example output (for input 7 - work start and weather start):
+{
+  "dates": [],
+  "times": { "start": "07:00", "end": "11:00" },
+  "weather": { "conditions": ["Wind", "Rain"], "severity": "severe" },
+  "activities": [],
+  "crew": { "action": "sent home" },
+  "equipment": [],
+  "materials": {},
+  "safety": [],
+  "duration": 4,
+  "summary": "Crew worked from 7am until heavy winds and rain at 11am forced everyone to be sent home",
+  "confidence": 95
 }
 ```
 
