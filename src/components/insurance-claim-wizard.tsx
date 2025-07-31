@@ -252,7 +252,7 @@ export default function InsuranceClaimWizard({
               <div className="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
                 <Shield className="h-10 w-10 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold">Insurance Claim Report</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">Insurance Claim Report</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
                 This wizard will help you create a comprehensive insurance claim report with all required documentation, 
                 including ACORD 125 Loss Notice format.
@@ -265,24 +265,24 @@ export default function InsuranceClaimWizard({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="col-span-2 sm:col-span-1">
                     <p className="text-sm text-gray-500">Project</p>
                     <p className="font-medium">{project.name}</p>
                   </div>
-                  <div>
+                  <div className="col-span-2 sm:col-span-1">
                     <p className="text-sm text-gray-500">Location</p>
                     <p className="font-medium flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {project.address}
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{project.address}</span>
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Total Delays</p>
-                    <p className="text-2xl font-bold text-red-600">{delays.length}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-red-600">{delays.length}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Total Impact</p>
-                    <p className="text-2xl font-bold text-green-600">${totalCost.toLocaleString()}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-green-600">${totalCost.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -312,7 +312,7 @@ export default function InsuranceClaimWizard({
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-4">Insurance Policy Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="policyNumber">Policy Number*</Label>
                   <Input
@@ -414,7 +414,7 @@ export default function InsuranceClaimWizard({
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="insuredCity">City*</Label>
                     <Input
@@ -447,7 +447,7 @@ export default function InsuranceClaimWizard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="insuredPhone">Company Phone</Label>
                     <Input
@@ -474,7 +474,7 @@ export default function InsuranceClaimWizard({
 
             <div>
               <h3 className="text-lg font-semibold mb-4">Reported By</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="reportedBy">Name*</Label>
                   <Input
@@ -593,22 +593,22 @@ export default function InsuranceClaimWizard({
 
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                   <div>
                     <p className="text-sm text-gray-600">Selected Delays</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-lg sm:text-2xl font-bold text-blue-600">
                       {formData.selectedDelays.length}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total Hours</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-lg sm:text-2xl font-bold text-blue-600">
                       {totalHours.toFixed(0)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total Cost</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-lg sm:text-2xl font-bold text-blue-600">
                       ${totalCost.toLocaleString()}
                     </p>
                   </div>
@@ -658,7 +658,7 @@ export default function InsuranceClaimWizard({
             </div>
 
             {formData.photos.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {formData.photos.map((photo, index) => (
                   <div key={index} className="relative group">
                     <img
@@ -684,7 +684,7 @@ export default function InsuranceClaimWizard({
 
             <div className="space-y-4">
               <h4 className="font-medium">Witness Information (Optional)</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="witnessName">Witness Name</Label>
                   <Input
@@ -818,7 +818,7 @@ export default function InsuranceClaimWizard({
                 <CardHeader>
                   <CardTitle className="text-base">Policy Information</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">Policy Number</p>
                     <p className="font-medium">{formData.policyNumber || 'Not provided'}</p>
@@ -835,7 +835,7 @@ export default function InsuranceClaimWizard({
                   <CardTitle className="text-base">Claim Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 text-sm">
                     <div>
                       <p className="text-gray-500">Delays Included</p>
                       <p className="font-medium">{formData.selectedDelays.length}</p>
@@ -849,7 +849,7 @@ export default function InsuranceClaimWizard({
                       <p className="font-medium text-green-600">${totalCost.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="pt-3 border-t grid grid-cols-3 gap-4 text-sm">
+                  <div className="pt-3 border-t grid grid-cols-3 gap-2 sm:gap-4 text-sm">
                     <div>
                       <p className="text-gray-500">Labor Cost</p>
                       <p className="font-medium">${laborCost.toLocaleString()}</p>
