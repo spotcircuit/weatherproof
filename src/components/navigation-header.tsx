@@ -76,18 +76,21 @@ export default function NavigationHeader() {
     <header className="bg-white border-b shadow-sm sticky top-10 z-40">
       <div className="max-w-7xl mx-auto">
         {/* Main Navigation */}
-        <div className="flex items-center justify-between h-16 px-6">
+        <div className="flex items-center justify-between h-16 px-4 sm:px-6">
           {/* Logo and Company */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 sm:gap-8">
             <Link href="/dashboard" className="flex items-center gap-2 group">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-lg shadow-md group-hover:shadow-lg transition-all">
-                <CloudRain className="h-6 w-6 text-white" />
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-1.5 sm:p-2 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                <CloudRain className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   WeatherProof
                 </h1>
                 <p className="text-xs text-gray-500">Demo Construction Co</p>
+              </div>
+              <div className="sm:hidden">
+                <h1 className="text-lg font-bold text-blue-600">WP</h1>
               </div>
             </Link>
 
@@ -129,20 +132,20 @@ export default function NavigationHeader() {
 
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
-          <div className="px-6 py-2 bg-gray-50 border-t">
-            <nav className="flex items-center text-sm">
-              <Link href="/dashboard" className="text-gray-500 hover:text-gray-700">
+          <div className="px-4 sm:px-6 py-2 bg-gray-50 border-t overflow-x-auto">
+            <nav className="flex items-center text-sm whitespace-nowrap">
+              <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 flex-shrink-0">
                 <Home className="h-4 w-4" />
               </Link>
               {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.href} className="flex items-center">
-                  <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                <div key={crumb.href} className="flex items-center flex-shrink-0">
+                  <ChevronRight className="h-4 w-4 text-gray-400 mx-1 sm:mx-2" />
                   {index === breadcrumbs.length - 1 ? (
-                    <span className="text-gray-900 font-medium">{crumb.name}</span>
+                    <span className="text-gray-900 font-medium truncate max-w-[150px] sm:max-w-none">{crumb.name}</span>
                   ) : (
                     <Link
                       href={crumb.href}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-gray-500 hover:text-gray-700 truncate max-w-[100px] sm:max-w-none"
                     >
                       {crumb.name}
                     </Link>
@@ -156,7 +159,7 @@ export default function NavigationHeader() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t">
+        <div className="md:hidden bg-white border-t fixed top-[106px] left-0 right-0 bottom-0 z-50 overflow-y-auto">
           <nav className="px-4 py-2 space-y-1">
             {navigation.map((item) => {
               const isActive = pathname.startsWith(item.href)
@@ -167,14 +170,14 @@ export default function NavigationHeader() {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`
-                    flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                    flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium w-full
                     ${isActive 
                       ? 'bg-blue-50 text-blue-700' 
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
                     }
                   `}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-5 w-5" />
                   {item.name}
                 </Link>
               )

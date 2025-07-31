@@ -1224,7 +1224,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
               )}
 
               <div className="flex justify-end mt-6">
-                <Button onClick={handleDateSelection} disabled={selectedDates.length === 0}>
+                <Button onClick={handleDateSelection} disabled={selectedDates.length === 0} className="w-full sm:w-auto">
                   Continue
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -1344,8 +1344,8 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep('select-dates')}>
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+                <Button variant="outline" onClick={() => setStep('select-dates')} className="w-full sm:w-auto">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
@@ -1397,7 +1397,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                   <AlertDescription>
                     <strong className="text-green-900">AI understood:</strong>
                     <p className="mt-1">{parsedData.summary}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-green-700">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-green-700">
                       {parsedData.startTime && (
                         <div>
                           <strong>Start:</strong> {parsedData.startTime}
@@ -1459,12 +1459,12 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                           ))}
                         </ul>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={handleResubmit}
-                          className="flex-1"
+                          className="w-full sm:flex-1"
                         >
                           <ArrowLeft className="mr-2 h-4 w-4" />
                           Answer Questions
@@ -1473,7 +1473,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                           variant="ghost" 
                           size="sm"
                           onClick={() => setShowQuestions(false)}
-                          className="flex-1"
+                          className="w-full sm:flex-1"
                         >
                           Continue Anyway
                         </Button>
@@ -1484,7 +1484,7 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
               )}
 
               {/* Extracted details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Date and Time */}
                 <div className="space-y-4">
                   <div>

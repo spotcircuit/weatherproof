@@ -54,8 +54,8 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
     <div className="space-y-8">
       {/* Insurance Claim Workflow Section */}
       <div>
-        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-          <FileWarning className="h-6 w-6 text-blue-600" />
+        <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+          <FileWarning className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
           Insurance Claim Status
         </h2>
 
@@ -63,19 +63,19 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
         {activeDelays.length > 0 && (
           <Card className="mb-6 border-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center animate-pulse">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-red-100 flex items-center justify-center animate-pulse flex-shrink-0">
+                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                   </div>
                   <div>
-                    <span className="text-lg">Active Weather Delays</span>
-                    <p className="text-sm font-normal text-gray-600 mt-1">
+                    <span className="text-base sm:text-lg">Active Weather Delays</span>
+                    <p className="text-xs sm:text-sm font-normal text-gray-600 mt-0.5 sm:mt-1">
                       Work is currently stopped - document these delays now
                     </p>
                   </div>
                 </div>
-                <Badge variant="destructive" className="text-lg px-3 py-1">
+                <Badge variant="destructive" className="text-base sm:text-lg px-2 sm:px-3 py-0.5 sm:py-1 self-start sm:self-auto">
                   {activeDelays.length} Active
                 </Badge>
               </CardTitle>
@@ -85,10 +85,10 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
                 {activeDelays.slice(0, 3).map(delay => {
                   const project = projects.find(p => p.id === delay.project_id)
                   return (
-                    <div key={delay.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200">
-                      <div>
-                        <p className="font-semibold">{project?.name}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <div key={delay.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white rounded-lg border border-red-200">
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm sm:text-base">{project?.name}</p>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mt-1">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             Started {format(new Date(delay.start_time), 'h:mm a')}
@@ -99,9 +99,10 @@ export default function DashboardClient({ projects, delayEvents, reports }: Dash
                           </span>
                         </div>
                       </div>
-                      <Link href={`/projects/${delay.project_id}/delays/${delay.id}`}>
-                        <Button variant="destructive" size="sm">
-                          Complete Documentation
+                      <Link href={`/projects/${delay.project_id}/delays/${delay.id}`} className="w-full sm:w-auto">
+                        <Button variant="destructive" size="sm" className="w-full sm:w-auto">
+                          <span className="hidden sm:inline">Complete Documentation</span>
+                          <span className="sm:hidden">Document</span>
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </Link>
