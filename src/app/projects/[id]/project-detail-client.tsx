@@ -33,6 +33,7 @@ import { format } from 'date-fns/format'
 import { GenerateReportDialog } from "@/components/generate-report-dialog"
 import ProjectFormModal from "@/components/project-form-modal"
 import CrewAssignmentsModal from "@/components/crew-assignments-modal"
+import EquipmentAssignmentsModal from "@/components/equipment-assignments-modal"
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import {
@@ -56,13 +57,15 @@ interface ProjectDetailClientProps {
   delayEvents: any[]
   recentWeather: any[]
   reports: any[]
+  weatherAlerts?: any[]
 }
 
 export function ProjectDetailClient({
   project,
   delayEvents,
   recentWeather,
-  reports: initialReports
+  reports: initialReports,
+  weatherAlerts = []
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -296,8 +299,47 @@ export function ProjectDetailClient({
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-4">
-                Last updated: {format(new Date(recentWeather[0].timestamp), 'p')}
+                Last updated: {format(new Date(recentWeather[0].collected_at), 'p')}
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Weather Alerts */}
+        {weatherAlerts && weatherAlerts.length > 0 && (
+          <Card className="mb-8 border-0 shadow-xl overflow-hidden border-2 border-red-300">
+            <div className="h-2 bg-gradient-to-r from-red-500 to-orange-500"></div>
+            <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50">
+              <CardTitle className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="h-5 w-5 animate-pulse" />
+                Active Weather Alerts
+              </CardTitle>
+              <CardDescription className="text-red-600">
+                NOAA weather warnings for this location
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {weatherAlerts.map((alert: any) => (
+                  <div key={alert.id} className="p-4 hover:bg-red-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-red-700">
+                          {alert.highest_alert_severity ? `${alert.highest_alert_severity} Alert` : 'Weather Alert Active'}
+                        </p>
+                        {alert.short_forecast && (
+                          <p className="text-sm text-gray-700 mt-1">
+                            {alert.short_forecast}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-600 mt-2">
+                          Updated: {format(new Date(alert.collected_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -352,6 +394,20 @@ export function ProjectDetailClient({
                 <div>
                   <p className="text-sm text-gray-500">End Date</p>
                   <p className="font-medium">{format(new Date(project.end_date), 'PPP')}</p>
+                </div>
+              )}
+              {project.deadline_date && (
+                <div>
+                  <p className="text-sm text-gray-500">Deadline</p>
+                  <p className="font-medium flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {format(new Date(project.deadline_date), 'PPP')}
+                  </p>
+                  {project.deadline_type && (
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {project.deadline_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </Badge>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -653,6 +709,14 @@ export function ProjectDetailClient({
       <CrewAssignmentsModal
         open={showCrewModal}
         onOpenChange={setShowCrewModal}
+        projectId={project.id}
+        projectName={project.name}
+        onUpdate={fetchAssignments}
+      />
+
+      <EquipmentAssignmentsModal
+        open={showEquipmentModal}
+        onOpenChange={setShowEquipmentModal}
         projectId={project.id}
         projectName={project.name}
         onUpdate={fetchAssignments}

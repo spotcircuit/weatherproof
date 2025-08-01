@@ -50,7 +50,9 @@ export default async function DashboardPage() {
     recentWeatherResult,
     crewMembersResult,
     equipmentResult,
-    upcomingDeadlinesResult
+    upcomingDeadlinesResult,
+    weatherAlertsResult,
+    projectsWithWeatherResult
   ] = await Promise.all([
     // Fetch user's projects
     supabase
@@ -82,13 +84,21 @@ export default async function DashboardPage() {
       .eq("projects.user_id", user.id)
       .order("created_at", { ascending: false }),
     
-    // Fetch recent weather readings
+    // Fetch recent weather readings - get the absolute latest
     supabase
-      .from("weather_readings")
-      .select("*, projects!inner(name, user_id)")
+      .from("project_weather")
+      .select(`
+        *,
+        projects!inner(
+          name,
+          user_id,
+          timezone
+        )
+      `)
       .eq("projects.user_id", user.id)
-      .order("timestamp", { ascending: false })
-      .limit(10),
+      .order("collected_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(20),
     
     // Fetch crew members with assignment counts
     supabase
@@ -130,7 +140,49 @@ export default async function DashboardPage() {
       .eq("active", true)
       .gte("end_date", new Date().toISOString())
       .lte("end_date", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order("end_date", { ascending: true })
+      .order("end_date", { ascending: true }),
+    
+    // Fetch active weather alerts from the alerts table
+    supabase
+      .from("project_weather_alerts")
+      .select(`
+        *,
+        projects!inner(
+          id,
+          name,
+          user_id,
+          latitude,
+          longitude,
+          weather_thresholds
+        ),
+        weather:weather_id (
+          collected_at
+        )
+      `)
+      .eq("projects.user_id", user.id)
+      .order("onset", { ascending: false })
+      .limit(10),
+    
+    // Fetch projects with their latest weather for risk assessment
+    supabase
+      .from("projects")
+      .select(`
+        *,
+        project_weather!left(
+          temperature,
+          wind_speed,
+          precipitation_amount,
+          conditions,
+          collected_at,
+          has_alerts,
+          short_forecast,
+          detailed_forecast,
+          highest_alert_severity
+        )
+      `)
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .eq("weather_collection_enabled", true)
   ])
 
   const projects = projectsResult.data || []
@@ -141,12 +193,37 @@ export default async function DashboardPage() {
   const crewMembers = crewMembersResult.data || []
   const equipment = equipmentResult.data || []
   const upcomingDeadlines = upcomingDeadlinesResult.data || []
+  const weatherAlerts = weatherAlertsResult.data || []
+  const projectsWithWeather = projectsWithWeatherResult.data || []
 
   // Calculate statistics
   const activeProjects = projects.filter(p => p.active).length
   const totalDelaysThisMonth = delayEvents.length
   const totalDelayCost = delayEvents.reduce((sum, d) => sum + (d.total_cost || 0), 0)
   const totalHoursLost = delayEvents.reduce((sum, d) => sum + (d.labor_hours_lost || 0), 0)
+  
+  // Calculate projects at weather risk
+  const projectsAtRisk = projectsWithWeather.filter(project => {
+    const latestWeather = project.project_weather?.[0]
+    if (!latestWeather || !project.weather_thresholds) return false
+    
+    const thresholds = project.weather_thresholds
+    return (
+      (thresholds.wind_speed && latestWeather.wind_speed > thresholds.wind_speed) ||
+      (thresholds.precipitation !== undefined && latestWeather.precipitation > thresholds.precipitation) ||
+      (thresholds.temperature_min && latestWeather.temperature < thresholds.temperature_min) ||
+      (thresholds.temperature_max && latestWeather.temperature > thresholds.temperature_max)
+    )
+  })
+  
+  // Group weather alerts by project and show the most recent/severe
+  const uniqueWeatherAlerts = weatherAlerts.reduce((acc: typeof weatherAlerts, alert: typeof weatherAlerts[0]) => {
+    const existingAlert = acc.find((a: typeof weatherAlerts[0]) => a.projects.id === alert.projects.id)
+    if (!existingAlert || new Date(alert.onset || alert.weather?.collected_at) > new Date(existingAlert.onset || existingAlert.weather?.collected_at)) {
+      return [...acc.filter((a: typeof weatherAlerts[0]) => a.projects.id !== alert.projects.id), alert]
+    }
+    return acc
+  }, [] as typeof weatherAlerts)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
@@ -264,12 +341,283 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* Insurance Claim Workflow Dashboard */}
-        <DashboardClient 
-          projects={projects}
-          delayEvents={delayEvents}
-          reports={reports}
-        />
+        {/* NOAA Weather Alerts */}
+        {uniqueWeatherAlerts.length > 0 && (
+          <Card className="mb-8 border-0 shadow-xl overflow-hidden border-2 border-red-300">
+            <CardHeader className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 animate-pulse" />
+                    NOAA Weather Alerts
+                  </CardTitle>
+                  <CardDescription className="text-red-100">
+                    Active weather warnings affecting your project sites
+                  </CardDescription>
+                </div>
+                <Badge className="bg-white text-red-600 text-lg px-3 py-1">
+                  {uniqueWeatherAlerts.length} Active
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {uniqueWeatherAlerts.slice(0, 5).map((alert: typeof uniqueWeatherAlerts[0]) => (
+                  <div key={alert.id} className="p-4 hover:bg-red-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">{alert.projects.name}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <MapPin className="inline h-3 w-3" /> {alert.projects.latitude?.toFixed(4)}, {alert.projects.longitude?.toFixed(4)}
+                        </p>
+                        <div className="mt-2">
+                          <p className="text-sm text-red-700 font-medium">
+                            {alert.event_type || 'Weather Alert Active'}
+                          </p>
+                          {alert.headline && (
+                            <p className="text-xs text-gray-700 mt-1">
+                              {alert.headline}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2">
+                            {alert.severity && (
+                              <Badge variant={alert.severity === 'Extreme' || alert.severity === 'Severe' ? 'destructive' : 'secondary'} className="text-xs">
+                                {alert.severity}
+                              </Badge>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              Expires: {format(new Date(alert.expires || alert.weather?.collected_at || new Date()), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={`/projects/${alert.projects.id}`}>
+                        <Button variant="destructive" size="sm">
+                          View Project
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Projects at Weather Risk - CRITICAL SECTION */}
+        {projectsAtRisk.length > 0 && (
+          <Card className="mb-8 border-0 shadow-2xl overflow-hidden border-4 border-orange-500 animate-pulse-border">
+            <div className="h-3 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-gradient"></div>
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-3 font-bold">
+                    <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
+                      <AlertTriangle className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <span className="block">WORK STOPPAGE REQUIRED</span>
+                      <span className="text-lg font-normal text-orange-100">{projectsAtRisk.length} Project{projectsAtRisk.length > 1 ? 's' : ''} Exceeding Safety Thresholds</span>
+                    </div>
+                  </CardTitle>
+                  <CardDescription className="text-orange-100 text-base mt-2">
+                    ⚠️ Current weather conditions exceed safe work limits - Immediate action required
+                  </CardDescription>
+                </div>
+                <Link href={`/document?project=${projectsAtRisk[0]?.id}`}>
+                  <Button size="lg" className="bg-white text-red-600 hover:bg-red-50 shadow-lg font-bold">
+                    <FileWarning className="mr-2 h-5 w-5" />
+                    Document Delays Now
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {projectsAtRisk.map((project) => {
+                  const weather = project.project_weather?.[0]
+                  const thresholds = project.weather_thresholds
+                  return (
+                    <div key={project.id} className="p-6 bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-lg text-gray-900">{project.name}</p>
+                              <p className="text-sm text-gray-600">{project.address}</p>
+                            </div>
+                          </div>
+                          <div className="bg-white/80 rounded-lg p-4 border-2 border-red-200">
+                            <p className="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              THRESHOLD VIOLATIONS:
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {thresholds.wind_speed && weather.wind_speed > thresholds.wind_speed && (
+                                <div className="bg-red-50 p-3 rounded-md border border-red-300">
+                                  <p className="text-xs font-medium text-gray-700 mb-1">🌬️ WIND SPEED LIMIT EXCEEDED</p>
+                                  <p className="font-bold text-red-700 text-lg">
+                                    {weather.wind_speed} mph
+                                  </p>
+                                  <p className="text-xs text-red-600">
+                                    Limit: {thresholds.wind_speed} mph
+                                  </p>
+                                </div>
+                              )}
+                              {thresholds.precipitation !== undefined && weather.precipitation > thresholds.precipitation && (
+                                <div className="bg-red-50 p-3 rounded-md border border-red-300">
+                                  <p className="text-xs font-medium text-gray-700 mb-1">💧 PRECIPITATION LIMIT EXCEEDED</p>
+                                  <p className="font-bold text-red-700 text-lg">
+                                    {weather.precipitation}"
+                                  </p>
+                                  <p className="text-xs text-red-600">
+                                    Limit: {thresholds.precipitation}"
+                                  </p>
+                                </div>
+                              )}
+                              {thresholds.temperature_min && weather.temperature < thresholds.temperature_min && (
+                                <div className="bg-blue-50 p-3 rounded-md border border-blue-300">
+                                  <p className="text-xs font-medium text-gray-700 mb-1">🥶 BELOW MIN TEMPERATURE</p>
+                                  <p className="font-bold text-blue-700 text-lg">
+                                    {weather.temperature}°F
+                                  </p>
+                                  <p className="text-xs text-blue-600">
+                                    Minimum: {thresholds.temperature_min}°F
+                                  </p>
+                                </div>
+                              )}
+                              {thresholds.temperature_max && weather.temperature > thresholds.temperature_max && (
+                                <div className="bg-red-50 p-3 rounded-md border border-red-300">
+                                  <p className="text-xs font-medium text-gray-700 mb-1">🔥 ABOVE MAX TEMPERATURE</p>
+                                  <p className="font-bold text-red-700 text-lg">
+                                    {weather.temperature}°F
+                                  </p>
+                                  <p className="text-xs text-red-600">
+                                    Maximum: {thresholds.temperature_max}°F
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Link href={`/projects/${project.id}`}>
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Building2 className="mr-2 h-4 w-4" />
+                              View Project
+                            </Button>
+                          </Link>
+                          <Link href={`/document?project=${project.id}`}>
+                            <Button variant="destructive" size="lg" className="w-full shadow-lg">
+                              <FileWarning className="mr-2 h-5 w-5" />
+                              Document Delay
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Weather Automation Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-cyan-50 to-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-cyan-600" />
+                Weather Collection Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <p className="text-gray-600">Last Collection</p>
+                  <p className="font-semibold text-gray-900">
+                    {(() => {
+                      // Find the most recent collection time across all projects
+                      const mostRecentTime = projects
+                        .filter(p => p.weather_last_collected_at)
+                        .map(p => new Date(p.weather_last_collected_at))
+                        .sort((a, b) => b.getTime() - a.getTime())[0];
+                      
+                      if (mostRecentTime) {
+                        return format(mostRecentTime, 'MMM d, h:mm a');
+                      } else if (recentWeather.length > 0) {
+                        return format(new Date(recentWeather[0].collected_at), 'MMM d, h:mm a');
+                      } else {
+                        return 'No data collected yet';
+                      }
+                    })()}
+                  </p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-600">Collection Frequency</p>
+                  <p className="font-medium text-gray-700">Every 30 minutes</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-600">Projects Monitored</p>
+                  <p className="font-medium text-cyan-700">
+                    {projects.filter(p => p.active && p.weather_collection_enabled).length} of {activeProjects}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 to-pink-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-red-600" />
+                Cost Impact Tracker
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <p className="text-gray-600">Today's Impact</p>
+                  <p className="font-bold text-2xl text-red-600">
+                    ${delayEvents
+                      .filter(d => new Date(d.start_time).toDateString() === new Date().toDateString())
+                      .reduce((sum, d) => sum + (d.total_cost || 0), 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-600">This Week</p>
+                  <p className="font-medium text-gray-700">
+                    ${delayEvents
+                      .filter(d => new Date(d.start_time) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+                      .reduce((sum, d) => sum + (d.total_cost || 0), 0)
+                      .toLocaleString()}
+                  </p>
+                </div>
+                <Link href="/reports?action=insurance-claim">
+                  <Button variant="outline" size="sm" className="w-full mt-3 border-red-200 text-red-700 hover:bg-red-50">
+                    Generate Claim Report
+                    <FileWarning className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Insurance Claim Workflow Dashboard - Only show if there are delays */}
+        {delayEvents.length > 0 && (
+          <DashboardClient 
+            projects={projects}
+            delayEvents={delayEvents}
+            reports={reports}
+          />
+        )}
 
         {/* Recent Alerts with enhanced styling */}
         {alerts && alerts.length > 0 && (
@@ -357,71 +705,6 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        {/* Recent Weather Conditions with enhanced styling */}
-        {recentWeather.length > 0 && (
-          <Card className="mb-8 border-0 shadow-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <CloudRain className="h-5 w-5 text-blue-600" />
-                    Recent Weather Conditions
-                  </CardTitle>
-                  <CardDescription>Latest readings from your project sites</CardDescription>
-                </div>
-                <Link href="/weather">
-                  <Button variant="outline" size="sm">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {recentWeather.slice(0, 5).map((reading) => (
-                  <div key={reading.id} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="text-center">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mb-1">
-                              <Wind className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <span className="text-xs font-medium text-gray-700">{reading.wind_speed?.toFixed(0) || 0} mph</span>
-                          </div>
-                          <div className="text-center">
-                            <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center mb-1">
-                              <Thermometer className="h-5 w-5 text-orange-600" />
-                            </div>
-                            <span className="text-xs font-medium text-gray-700">{reading.temperature?.toFixed(0)}°F</span>
-                          </div>
-                          {reading.precipitation > 0 && (
-                            <div className="text-center">
-                              <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center mb-1">
-                                <Droplets className="h-5 w-5 text-cyan-600" />
-                              </div>
-                              <span className="text-xs font-medium text-gray-700">{reading.precipitation}"</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{reading.projects?.name}</p>
-                          <p className="text-sm text-gray-600">
-                            {reading.conditions || 'Clear'} • {format(new Date(reading.timestamp), 'MMM d, h:mm a')}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={reading.precipitation > 0 || reading.wind_speed > 25 ? "destructive" : "secondary"}>
-                        {reading.precipitation > 0 || reading.wind_speed > 25 ? "Delay Risk" : "Safe"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Quick Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -546,6 +829,9 @@ export default async function DashboardPage() {
                   const projectDelays = delayEvents.filter(d => d.project_id === project.id)
                   const hasActiveDelay = projectDelays.some(d => !d.end_time)
                   
+                  // Find latest weather for this project
+                  const projectWeather = recentWeather.find(w => w.project_id === project.id)
+                  
                   // Alternating row colors for better contrast
                   const bgColor = index % 2 === 0 
                     ? 'bg-white hover:bg-gray-50' 
@@ -596,6 +882,43 @@ export default async function DashboardPage() {
                                 Started {format(new Date(project.start_date), 'MMM d, yyyy')}
                               </span>
                             </div>
+                            {/* Weather Forecast */}
+                            {projectWeather && (
+                              <div className="mt-3 p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                                <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-1">
+                                    <Thermometer className="h-4 w-4 text-orange-500" />
+                                    <span className="font-medium">{projectWeather.temperature?.toFixed(0)}°F</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Wind className="h-4 w-4 text-blue-500" />
+                                    <span className="font-medium">{projectWeather.wind_speed?.toFixed(0)} mph</span>
+                                  </div>
+                                  {projectWeather.precipitation_amount > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      <Droplets className="h-4 w-4 text-cyan-500" />
+                                      <span className="font-medium">{projectWeather.precipitation_amount?.toFixed(2)}"</span>
+                                    </div>
+                                  )}
+                                  <span className="text-gray-600 flex-1">
+                                    {projectWeather.conditions || 'Clear'}
+                                  </span>
+                                </div>
+                                {projectWeather.has_alerts && projectWeather.highest_alert_severity && (
+                                  <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
+                                    <div className="flex items-start gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                      <p className="text-xs text-red-700 font-medium">
+                                        {projectWeather.highest_alert_severity} Weather Alert Active
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                {projectWeather.short_forecast && (
+                                  <p className="text-xs text-gray-600 mt-1">{projectWeather.short_forecast}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right space-y-3">
                             <div className="flex items-center gap-2 justify-end">

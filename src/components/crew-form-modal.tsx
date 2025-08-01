@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -22,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Building2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface CrewFormModalProps {
   open: boolean
@@ -42,7 +41,8 @@ export default function CrewFormModal({
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [assignedProjects, setAssignedProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [currentProjectId, setCurrentProjectId] = useState<string>("")
   
   const [formData, setFormData] = useState({
     name: "",
@@ -50,7 +50,8 @@ export default function CrewFormModal({
     phone: "",
     email: "",
     hourlyRate: "",
-    notes: ""
+    notes: "",
+    projectId: ""
   })
 
   useEffect(() => {
@@ -61,7 +62,8 @@ export default function CrewFormModal({
         phone: memberData.phone || "",
         email: memberData.email || "",
         hourlyRate: memberData.hourly_rate?.toString() || "",
-        notes: memberData.notes || ""
+        notes: memberData.notes || "",
+        projectId: ""
       })
     } else {
       // Reset form when creating new
@@ -71,34 +73,46 @@ export default function CrewFormModal({
         phone: "",
         email: "",
         hourlyRate: "",
-        notes: ""
+        notes: "",
+        projectId: ""
       })
     }
     
-    // Fetch project assignments if editing
-    if (memberId && open) {
-      fetchProjectAssignments()
-    } else {
-      setAssignedProjects([])
+    // Fetch projects and current assignment
+    if (open) {
+      fetchProjects()
+      if (memberId) {
+        fetchCurrentAssignment()
+      }
     }
   }, [memberData, open, memberId])
 
-  const fetchProjectAssignments = async () => {
+  const fetchProjects = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('projects')
+      .select('id, name, location')
+      .eq('user_id', user.id)
+      .eq('active', true)
+      .order('name')
+
+    setProjects(data || [])
+  }
+
+  const fetchCurrentAssignment = async () => {
     const { data } = await supabase
       .from('project_crew_assignments')
-      .select(`
-        project_id,
-        assigned_date,
-        projects (
-          id,
-          name,
-          active
-        )
-      `)
+      .select('project_id')
       .eq('crew_member_id', memberId)
       .is('unassigned_date', null)
-    
-    setAssignedProjects(data || [])
+      .single()
+
+    if (data) {
+      setCurrentProjectId(data.project_id)
+      setFormData(prev => ({ ...prev, projectId: data.project_id }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +134,10 @@ export default function CrewFormModal({
         notes: formData.notes || null
       }
 
+      let crewMemberId = memberId
+
       if (memberId) {
+        // Update existing member
         const { error: updateError } = await supabase
           .from("crew_members")
           .update(payload)
@@ -129,19 +146,60 @@ export default function CrewFormModal({
 
         if (updateError) {
           console.error('Crew member update error:', updateError)
-          throw new Error(`Failed to update crew member: ${updateError.message || JSON.stringify(updateError)}`)
+          throw new Error(`Failed to update crew member: ${updateError.message}`)
+        }
+
+        // Handle project assignment change
+        if (formData.projectId !== currentProjectId) {
+          // Remove old assignment if exists
+          if (currentProjectId) {
+            await supabase
+              .from('project_crew_assignments')
+              .update({ unassigned_date: new Date().toISOString() })
+              .eq('crew_member_id', memberId)
+              .eq('project_id', currentProjectId)
+              .is('unassigned_date', null)
+          }
+
+          // Add new assignment if selected
+          if (formData.projectId) {
+            await supabase
+              .from('project_crew_assignments')
+              .insert({
+                crew_member_id: memberId,
+                project_id: formData.projectId,
+                assigned_date: new Date().toISOString()
+              })
+          }
         }
       } else {
-        const { error: insertError } = await supabase
+        // Create new member
+        const { data: insertData, error: insertError } = await supabase
           .from("crew_members")
           .insert(payload)
+          .select()
+          .single()
 
         if (insertError) {
           console.error('Crew member insert error:', insertError)
-          throw new Error(`Failed to create crew member: ${insertError.message || JSON.stringify(insertError)}`)
+          throw new Error(`Failed to create crew member: ${insertError.message}`)
+        }
+
+        crewMemberId = insertData.id
+
+        // Assign to project if selected
+        if (formData.projectId) {
+          await supabase
+            .from('project_crew_assignments')
+            .insert({
+              crew_member_id: crewMemberId,
+              project_id: formData.projectId,
+              assigned_date: new Date().toISOString()
+            })
         }
       }
 
+      toast.success(memberId ? 'Crew member updated' : 'Crew member added')
       onOpenChange(false)
       if (onSuccess) {
         onSuccess()
@@ -149,14 +207,7 @@ export default function CrewFormModal({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred"
       setError(errorMessage)
-      console.error('Crew form submit error:', {
-        error: err,
-        message: errorMessage,
-        type: typeof err,
-        stringified: JSON.stringify(err, null, 2),
-        operation: memberId ? 'update' : 'create',
-        memberId
-      })
+      console.error('Crew form submit error:', err)
     } finally {
       setLoading(false)
     }
@@ -273,28 +324,26 @@ export default function CrewFormModal({
                 rows={3}
               />
             </div>
-            
-            {/* Show current project assignments when editing */}
-            {memberId && assignedProjects.length > 0 && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Building2 className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-900 mb-2">Currently assigned to:</p>
-                    <div className="space-y-1">
-                      {assignedProjects.map((assignment) => (
-                        <div key={assignment.project_id} className="flex items-center gap-2">
-                          <span className="text-sm text-blue-700">• {assignment.projects.name}</span>
-                          {assignment.projects.active && (
-                            <Badge variant="secondary" className="text-xs">Active</Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="projectId">Assigned Project</Label>
+              <Select 
+                value={formData.projectId} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name} - {project.location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <DialogFooter className="gap-2">

@@ -177,11 +177,16 @@ export default function ProjectCrewAssignment({ projectId }: { projectId: string
                     <SelectContent>
                       {unassignedCrew.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{member.name}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              {member.role}
-                            </Badge>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{member.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {member.role}
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              ${member.hourly_rate}/hr
+                            </span>
                           </div>
                         </SelectItem>
                       ))}

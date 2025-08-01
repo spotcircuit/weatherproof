@@ -179,13 +179,15 @@ export default function ProjectEquipmentAssignment({ projectId }: { projectId: s
                     <SelectContent>
                       {unassignedEquipment.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{item.name}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              {item.type}
-                            </Badge>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{item.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.type}
+                              </Badge>
+                            </div>
                             {item.daily_rate && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-muted-foreground">
                                 ${item.daily_rate}/day
                               </span>
                             )}

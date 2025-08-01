@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from "sonner"
 
 interface EquipmentFormModalProps {
   open: boolean
@@ -40,13 +41,15 @@ export default function EquipmentFormModal({
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [projects, setProjects] = useState<any[]>([])
+  const [currentProjectId, setCurrentProjectId] = useState<string>("")
   
   const [formData, setFormData] = useState({
     name: "",
     type: "",
-    status: "available",
     dailyRate: "",
-    notes: ""
+    notes: "",
+    projectId: ""
   })
 
   useEffect(() => {
@@ -54,21 +57,57 @@ export default function EquipmentFormModal({
       setFormData({
         name: equipmentData.name || "",
         type: equipmentData.type || "",
-        status: equipmentData.status || "available",
         dailyRate: equipmentData.daily_rate?.toString() || "",
-        notes: equipmentData.notes || ""
+        notes: equipmentData.notes || "",
+        projectId: ""
       })
     } else {
       // Reset form when creating new
       setFormData({
         name: "",
         type: "",
-        status: "available",
         dailyRate: "",
-        notes: ""
+        notes: "",
+        projectId: ""
       })
     }
-  }, [equipmentData, open])
+    
+    // Fetch projects and current assignment
+    if (open) {
+      fetchProjects()
+      if (equipmentId) {
+        fetchCurrentAssignment()
+      }
+    }
+  }, [equipmentData, open, equipmentId])
+
+  const fetchProjects = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('projects')
+      .select('id, name, location')
+      .eq('user_id', user.id)
+      .eq('active', true)
+      .order('name')
+
+    setProjects(data || [])
+  }
+
+  const fetchCurrentAssignment = async () => {
+    const { data } = await supabase
+      .from('project_equipment_assignments')
+      .select('project_id')
+      .eq('equipment_id', equipmentId)
+      .is('unassigned_date', null)
+      .single()
+
+    if (data) {
+      setCurrentProjectId(data.project_id)
+      setFormData(prev => ({ ...prev, projectId: data.project_id }))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,12 +122,15 @@ export default function EquipmentFormModal({
         user_id: user.id,
         name: formData.name,
         type: formData.type,
-        status: formData.status,
         daily_rate: parseFloat(formData.dailyRate) || null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        active: true
       }
 
+      let equipmentIdToUse = equipmentId
+
       if (equipmentId) {
+        // Update existing equipment
         const { error: updateError } = await supabase
           .from("equipment")
           .update(payload)
@@ -97,19 +139,60 @@ export default function EquipmentFormModal({
 
         if (updateError) {
           console.error('Equipment update error:', updateError)
-          throw new Error(`Failed to update equipment: ${updateError.message || JSON.stringify(updateError)}`)
+          throw new Error(`Failed to update equipment: ${updateError.message}`)
+        }
+
+        // Handle project assignment change
+        if (formData.projectId !== currentProjectId) {
+          // Remove old assignment if exists
+          if (currentProjectId) {
+            await supabase
+              .from('project_equipment_assignments')
+              .update({ unassigned_date: new Date().toISOString() })
+              .eq('equipment_id', equipmentId)
+              .eq('project_id', currentProjectId)
+              .is('unassigned_date', null)
+          }
+
+          // Add new assignment if selected
+          if (formData.projectId) {
+            await supabase
+              .from('project_equipment_assignments')
+              .insert({
+                equipment_id: equipmentId,
+                project_id: formData.projectId,
+                assigned_date: new Date().toISOString()
+              })
+          }
         }
       } else {
-        const { error: insertError } = await supabase
+        // Create new equipment
+        const { data: insertData, error: insertError } = await supabase
           .from("equipment")
           .insert(payload)
+          .select()
+          .single()
 
         if (insertError) {
           console.error('Equipment insert error:', insertError)
-          throw new Error(`Failed to create equipment: ${insertError.message || JSON.stringify(insertError)}`)
+          throw new Error(`Failed to create equipment: ${insertError.message}`)
+        }
+
+        equipmentIdToUse = insertData.id
+
+        // Assign to project if selected
+        if (formData.projectId) {
+          await supabase
+            .from('project_equipment_assignments')
+            .insert({
+              equipment_id: equipmentIdToUse,
+              project_id: formData.projectId,
+              assigned_date: new Date().toISOString()
+            })
         }
       }
 
+      toast.success(equipmentId ? 'Equipment updated' : 'Equipment added')
       onOpenChange(false)
       if (onSuccess) {
         onSuccess()
@@ -117,14 +200,7 @@ export default function EquipmentFormModal({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred"
       setError(errorMessage)
-      console.error('Equipment form submit error:', {
-        error: err,
-        message: errorMessage,
-        type: typeof err,
-        stringified: JSON.stringify(err, null, 2),
-        operation: equipmentId ? 'update' : 'create',
-        equipmentId
-      })
+      console.error('Equipment form submit error:', err)
     } finally {
       setLoading(false)
     }
@@ -161,7 +237,7 @@ export default function EquipmentFormModal({
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="CAT 320 Excavator"
+                placeholder="Excavator #1"
                 required
               />
             </div>
@@ -179,9 +255,9 @@ export default function EquipmentFormModal({
                   <SelectItem value="Excavator">Excavator</SelectItem>
                   <SelectItem value="Bulldozer">Bulldozer</SelectItem>
                   <SelectItem value="Crane">Crane</SelectItem>
-                  <SelectItem value="Dump Truck">Dump Truck</SelectItem>
-                  <SelectItem value="Backhoe">Backhoe</SelectItem>
                   <SelectItem value="Forklift">Forklift</SelectItem>
+                  <SelectItem value="Backhoe">Backhoe</SelectItem>
+                  <SelectItem value="Dump Truck">Dump Truck</SelectItem>
                   <SelectItem value="Concrete Mixer">Concrete Mixer</SelectItem>
                   <SelectItem value="Generator">Generator</SelectItem>
                   <SelectItem value="Compressor">Compressor</SelectItem>
@@ -192,37 +268,17 @@ export default function EquipmentFormModal({
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status*</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="in_use">In Use</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="out_of_service">Out of Service</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dailyRate">Daily Rate ($)</Label>
-                <Input
-                  id="dailyRate"
-                  name="dailyRate"
-                  type="number"
-                  step="0.01"
-                  value={formData.dailyRate}
-                  onChange={handleChange}
-                  placeholder="500.00"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="dailyRate">Daily Rate ($)</Label>
+              <Input
+                id="dailyRate"
+                name="dailyRate"
+                type="number"
+                step="0.01"
+                value={formData.dailyRate}
+                onChange={handleChange}
+                placeholder="500.00"
+              />
             </div>
 
             <div className="space-y-2">
@@ -232,9 +288,29 @@ export default function EquipmentFormModal({
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Additional information, maintenance schedule, etc..."
+                placeholder="Additional information..."
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="projectId">Assigned Project</Label>
+              <Select 
+                value={formData.projectId} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name} - {project.location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

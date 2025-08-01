@@ -39,9 +39,12 @@ import { useToast } from '@/hooks/use-toast'
 import { parseDelayDescription } from '@/services/n8n-delay-parser'
 import { CrewEquipmentSelector } from '@/components/crew-equipment-selector'
 import { Separator } from '@/components/ui/separator'
+import { n8nWebhooks } from '@/lib/n8n-helpers'
+import { fetchRealtimeWeather, formatWeatherForDisplay, getWeatherImpactSummary } from '@/lib/weather-realtime'
 
 interface Props {
   projects: any[]
+  defaultProjectId?: string | null
   onComplete?: () => void
 }
 
@@ -169,13 +172,13 @@ const calculateDuration = (startTime: string, endTime: string): number => {
   return (endMinutes - startMinutes) / 60
 }
 
-export function SmartDelayDocumentation({ projects, onComplete }: Props) {
+export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete }: Props) {
   const { toast } = useToast()
   const supabase = createClient()
   
   // State
   const [step, setStep] = useState<'select-dates' | 'describe' | 'review'>('select-dates')
-  const [selectedProject, setSelectedProject] = useState(projects[0]?.id || '')
+  const [selectedProject, setSelectedProject] = useState(defaultProjectId || projects[0]?.id || '')
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [currentDateIndex, setCurrentDateIndex] = useState(0)
   const [description, setDescription] = useState('')
@@ -187,6 +190,8 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
   const [originalDescription, setOriginalDescription] = useState('')
   const [documentMode, setDocumentMode] = useState<'individual' | 'period'>('individual')
   const [projectActivities, setProjectActivities] = useState<string[]>([])
+  const [fetchingWeather, setFetchingWeather] = useState(false)
+  const [noaaWeatherData, setNoaaWeatherData] = useState<any>(null)
   
   // Cache for crew and equipment data
   const [projectAssignmentsCache, setProjectAssignmentsCache] = useState<Record<string, ProjectAssignments>>({})
@@ -208,18 +213,18 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
     
     // Fetch weather readings for the past 30 days
     const { data } = await supabase
-      .from('weather_readings')
+      .from('project_weather')
       .select('*')
       .eq('project_id', selectedProject)
-      .gte('timestamp', thirtyDaysAgo.toISOString())
-      .order('timestamp', { ascending: false })
+      .gte('collected_at', thirtyDaysAgo.toISOString())
+      .order('collected_at', { ascending: false })
 
     if (data) {
       // Group by date
       const weatherByDate: Record<string, any> = {}
       data.forEach(reading => {
-        const date = format(new Date(reading.timestamp), 'yyyy-MM-dd')
-        if (!weatherByDate[date] || new Date(reading.timestamp) > new Date(weatherByDate[date].timestamp)) {
+        const date = format(new Date(reading.collected_at), 'yyyy-MM-dd')
+        if (!weatherByDate[date] || new Date(reading.collected_at) > new Date(weatherByDate[date].collected_at)) {
           weatherByDate[date] = reading
         }
       })
@@ -756,6 +761,83 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
     }
     
     return enhanced + prompts.join(' ')
+  }
+
+  // Fetch NOAA weather data via n8n
+  const fetchNOAAWeather = async () => {
+    const project = projects.find(p => p.id === selectedProject)
+    if (!project || !project.latitude || !project.longitude) {
+      toast({
+        title: "Location required",
+        description: "This project doesn't have GPS coordinates. Please update the project settings.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setFetchingWeather(true)
+    try {
+      // Use the new fetchProjectWeather for comprehensive weather data
+      const result = await n8nWebhooks.fetchProjectWeather({
+        projectId: project.id,
+        latitude: project.latitude,
+        longitude: project.longitude,
+        requestType: 'realtime',
+        includeAlerts: true,
+        includeHourly: false,
+        storeResult: false // Don't store real-time lookups in delay documentation
+      })
+
+      if (result.success && result.data) {
+        setNoaaWeatherData(result.data)
+        
+        // Auto-populate weather conditions based on NOAA data
+        const conditions: string[] = []
+        
+        if (result.data.precipitation_amount > 0.1) {
+          conditions.push(result.data.precipitation_amount > 0.5 ? 'Heavy Rain' : 'Rain')
+        }
+        if (result.data.wind_speed > 15) {
+          conditions.push(result.data.wind_speed > 25 ? 'High Winds' : 'Wind')
+        }
+        if (result.data.temperature < 40) {
+          conditions.push('Cold')
+        }
+        if (result.data.conditions?.includes('snow')) {
+          conditions.push('Snow')
+        }
+        if (result.data.conditions?.includes('thunder') || result.data.conditions?.includes('lightning')) {
+          conditions.push('Lightning')
+        }
+        
+        // Update parsed data with NOAA conditions
+        setParsedData((prev: any) => ({
+          ...prev,
+          weatherConditions: [...new Set([...(prev.weatherConditions || []), ...conditions])],
+          noaaData: result.data
+        }))
+        
+        toast({
+          title: "Weather data fetched",
+          description: `NOAA: ${result.data.conditions.join(', ')}, ${result.data.temperature}°F`
+        })
+      } else {
+        toast({
+          title: "Weather fetch failed",
+          description: result.error || "Unable to fetch NOAA weather data",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('NOAA fetch error:', error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch weather data. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setFetchingWeather(false)
+    }
   }
 
   // Save delay to database
@@ -1528,8 +1610,45 @@ export function SmartDelayDocumentation({ projects, onComplete }: Props) {
                 {/* Weather Conditions */}
                 <div className="space-y-4">
                   <div>
-                    <Label>Weather Conditions</Label>
-                    <div className="space-y-2 mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Weather Conditions</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchNOAAWeather}
+                        disabled={fetchingWeather}
+                      >
+                        {fetchingWeather ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Fetching...
+                          </>
+                        ) : (
+                          <>
+                            <Cloud className="mr-2 h-3 w-3" />
+                            Get NOAA Weather
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {noaaWeatherData && (
+                      <Alert className="mb-2">
+                        <Cloud className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>NOAA Data:</strong> {noaaWeatherData.temperature}°{noaaWeatherData.temperatureUnit || 'F'}, 
+                          Wind: {noaaWeatherData.wind_speed} mph {noaaWeatherData.wind_direction}, 
+                          Precipitation: {noaaWeatherData.precipitation_amount}"
+                          {noaaWeatherData.conditions && noaaWeatherData.conditions.length > 0 && (
+                            <>, Conditions: {noaaWeatherData.conditions.join(', ')}</>
+                          )}
+                          {noaaWeatherData.has_alerts && (
+                            <><br /><span className="text-orange-600">⚠️ Weather alerts active</span></>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="space-y-2">
                       {['Rain', 'Heavy Rain', 'Wind', 'High Winds', 'Lightning', 'Cold', 'Snow'].map(condition => (
                         <label key={condition} className="flex items-center gap-2">
                           <Checkbox 

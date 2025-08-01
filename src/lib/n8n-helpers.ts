@@ -142,6 +142,119 @@ export const n8nWebhooks = {
         timeout: 20000
       }
     )
+  },
+
+  async fetchNOAAWeather(params: {
+    latitude: number
+    longitude: number
+    date: string
+    startTime?: string
+    endTime?: string
+    gridId?: string
+    gridX?: number
+    gridY?: number
+  }) {
+    return callN8nWebhook<
+      typeof params,
+      {
+        temperature: number
+        temperatureUnit: string
+        windSpeed: number
+        windDirection: string
+        precipitation: number
+        precipitationType?: string
+        conditions: string[]
+        humidity?: number
+        pressure?: number
+        visibility?: number
+        cloudCover?: number
+        alerts?: Array<{
+          event: string
+          severity: string
+          urgency: string
+          description: string
+        }>
+        raw?: any
+      }
+    >(
+      params,
+      {
+        url: process.env.N8N_NOAA_WEATHER_URL!,
+        auth: process.env.N8N_WEBHOOK_AUTH,
+        timeout: 15000
+      }
+    )
+  },
+
+  async fetchProjectWeather(params: {
+    projectId: string
+    latitude: number
+    longitude: number
+    gridId?: string
+    gridX?: number
+    gridY?: number
+    requestType: 'scheduled' | 'realtime'
+    userId?: string
+    includeAlerts?: boolean
+    includeHourly?: boolean
+    storeResult?: boolean
+  }) {
+    return callN8nWebhook<
+      typeof params,
+      {
+        temperature: number
+        temperatureUnit: string
+        feels_like?: number
+        temperature_min?: number
+        temperature_max?: number
+        wind_speed: number
+        wind_gust?: number
+        wind_direction: string
+        precipitation_probability: number
+        precipitation_amount: number
+        precipitation_type?: string
+        humidity?: number
+        visibility?: number
+        cloud_cover?: number
+        uv_index?: number
+        short_forecast: string
+        detailed_forecast?: string
+        conditions: string[]
+        impacts: {
+          concrete: boolean
+          roofing: boolean
+          crane: boolean
+          electrical: boolean
+          painting: boolean
+        }
+        has_alerts: boolean
+        alert_count: number
+        alerts?: Array<{
+          id: string
+          event: string
+          severity: string
+          urgency: string
+          certainty: string
+          headline: string
+          description: string
+          onset: string
+          expires: string
+        }>
+        grid?: {
+          gridId: string
+          gridX: number
+          gridY: number
+        }
+        raw_data?: any
+      }
+    >(
+      params,
+      {
+        url: process.env.N8N_PROJECT_WEATHER_URL || process.env.N8N_NOAA_WEATHER_URL!,
+        auth: process.env.N8N_WEBHOOK_AUTH,
+        timeout: params.requestType === 'realtime' ? 10000 : 30000
+      }
+    )
   }
 }
 

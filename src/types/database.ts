@@ -24,6 +24,7 @@ export interface Project {
   address: string
   latitude: number
   longitude: number
+  timezone?: string
   start_date: string
   end_date: string | null
   active: boolean
@@ -44,6 +45,12 @@ export interface Project {
   metadata: any
   created_at: string
   updated_at: string
+  weather_collection_enabled?: boolean
+  weather_collection_frequency?: number
+  weather_last_collected_at?: string
+  deadline_date?: string | null
+  deadline_type?: 'contract' | 'milestone' | 'weather_window' | 'permit_expiry' | 'insurance_claim' | 'other' | null
+  deadline_notes?: string | null
 }
 
 export interface WeatherReading {

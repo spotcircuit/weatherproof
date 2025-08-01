@@ -65,6 +65,10 @@ export default function ProjectFormModal({
     contractNumber: "",
     generalContractor: "",
     insurancePolicyNumber: "",
+    // Deadline fields
+    deadlineDate: "",
+    deadlineType: "",
+    deadlineNotes: "",
   })
 
   useEffect(() => {
@@ -89,6 +93,10 @@ export default function ProjectFormModal({
         contractNumber: projectData.contract_number || "",
         generalContractor: projectData.general_contractor || "",
         insurancePolicyNumber: projectData.insurance_policy_number || "",
+        // Deadline fields
+        deadlineDate: projectData.deadline_date || "",
+        deadlineType: projectData.deadline_type || "",
+        deadlineNotes: projectData.deadline_notes || "",
       })
     }
   }, [projectData])
@@ -129,6 +137,10 @@ export default function ProjectFormModal({
         contract_number: formData.contractNumber || null,
         general_contractor: formData.generalContractor || null,
         insurance_policy_number: formData.insurancePolicyNumber || null,
+        // Deadline fields
+        deadline_date: formData.deadlineDate || null,
+        deadline_type: formData.deadlineType || null,
+        deadline_notes: formData.deadlineNotes || null,
       }
 
       if (projectId) {
@@ -346,6 +358,55 @@ export default function ProjectFormModal({
                     onChange={handleChange}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Deadlines */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-900">Project Deadline</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deadlineDate">Deadline Date</Label>
+                  <Input
+                    id="deadlineDate"
+                    name="deadlineDate"
+                    type="date"
+                    value={formData.deadlineDate}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deadlineType">Deadline Type</Label>
+                  <Select 
+                    value={formData.deadlineType} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, deadlineType: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="contract">Contract Deadline</SelectItem>
+                      <SelectItem value="milestone">Milestone</SelectItem>
+                      <SelectItem value="weather_window">Weather Window</SelectItem>
+                      <SelectItem value="permit_expiry">Permit Expiry</SelectItem>
+                      <SelectItem value="insurance_claim">Insurance Claim</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="deadlineNotes">Deadline Notes</Label>
+                <Textarea
+                  id="deadlineNotes"
+                  name="deadlineNotes"
+                  value={formData.deadlineNotes}
+                  onChange={handleChange}
+                  placeholder="Additional notes about the deadline..."
+                  rows={2}
+                />
               </div>
             </div>
 

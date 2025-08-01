@@ -29,6 +29,7 @@ interface NavigationItem {
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Projects', href: '/projects', icon: Building2 },
+  { name: 'Weather', href: '/weather', icon: CloudRain },
   { name: 'Document Delays', href: '/document', icon: ClipboardCheck },
   { name: 'Crew', href: '/crew', icon: Users },
   { name: 'Equipment', href: '/equipment', icon: Wrench },

@@ -1,0 +1,47 @@
+{
+  "temperature": 85,
+  "temperatureUnit": "F",
+  "feels_like": 92,
+  "temperature_min": 75,
+  "temperature_max": 95,
+  "wind_speed": 10,
+  "wind_gust": 15,
+  "wind_direction": "S",
+  "precipitation_probability": 30,
+  "precipitation_amount": 0.1,
+  "precipitation_type": "rain",
+  "humidity": 65,
+  "visibility": 10,
+  "cloud_cover": 40,
+  "uv_index": 8,
+  "short_forecast": "Partly Cloudy",
+  "detailed_forecast": "Partly cloudy with a chance of afternoon thunderstorms. High near 95F. Winds S at 10 mph.",
+  "conditions": ["partly_cloudy", "hot", "humid"],
+  "impacts": {
+    "concrete": true,
+    "roofing": false,
+    "crane": false,
+    "electrical": false,
+    "painting": true
+  },
+  "has_alerts": true,
+  "alert_count": 3,
+  "alerts": [
+    {
+      "id": "urn:oid:2.49.0.1.840.0.e643b9396da306e238520fbbc351c3a50ff04a7e.001.1",
+      "event": "Flood Advisory",
+      "severity": "Minor",
+      "urgency": "Expected",
+      "certainty": "Likely",
+      "headline": "Flood Advisory issued July 31 at 9:29PM CDT until July 31 at 11:00PM CDT by NWS Fort Worth TX",
+      "description": "Urban and small stream flooding caused by excessive rainfall is expected.",
+      "onset": "2025-07-31T21:29:00-05:00",
+      "expires": "2025-07-31T23:00:00-05:00"
+    }
+  ],
+  "grid": {
+    "gridId": "FWD",
+    "gridX": 58,
+    "gridY": 103
+  }
+}

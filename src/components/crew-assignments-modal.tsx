@@ -70,7 +70,7 @@ export default function CrewAssignmentsModal({
         .from('crew_members')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .eq('active', true)
         .order('name')
 
       // Fetch current assignments for this project
