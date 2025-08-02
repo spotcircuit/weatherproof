@@ -45,6 +45,8 @@ import { fetchRealtimeWeather, formatWeatherForDisplay, getWeatherImpactSummary 
 interface Props {
   projects: any[]
   defaultProjectId?: string | null
+  defaultDate?: string | null
+  defaultAnnouncement?: string | null
   onComplete?: () => void
 }
 
@@ -172,7 +174,7 @@ const calculateDuration = (startTime: string, endTime: string): number => {
   return (endMinutes - startMinutes) / 60
 }
 
-export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete }: Props) {
+export function SmartDelayDocumentation({ projects, defaultProjectId, defaultDate, defaultAnnouncement, onComplete }: Props) {
   const { toast } = useToast()
   const supabase = createClient()
   
@@ -192,9 +194,29 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
   const [projectActivities, setProjectActivities] = useState<string[]>([])
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [noaaWeatherData, setNoaaWeatherData] = useState<any>(null)
+  const [projectWeatherInfo, setProjectWeatherInfo] = useState<any>(null)
+  const [loadingProjectWeather, setLoadingProjectWeather] = useState(false)
   
   // Cache for crew and equipment data
   const [projectAssignmentsCache, setProjectAssignmentsCache] = useState<Record<string, ProjectAssignments>>({})
+  
+  // Initialize from URL parameters
+  useEffect(() => {
+    if (defaultDate) {
+      try {
+        const date = new Date(defaultDate)
+        if (!isNaN(date.getTime())) {
+          setSelectedDates([date])
+        }
+      } catch (error) {
+        console.error('Invalid default date:', defaultDate)
+      }
+    }
+    
+    if (defaultAnnouncement) {
+      setDescription(decodeURIComponent(defaultAnnouncement))
+    }
+  }, [defaultDate, defaultAnnouncement])
   
   // Load historical weather data, project activities, and crew/equipment
   useEffect(() => {
@@ -202,6 +224,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
       loadHistoricalWeather()
       loadProjectActivities()
       loadProjectAssignments()
+      loadProjectWeatherInfo()
     }
   }, [selectedProject])
 
@@ -229,6 +252,45 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
         }
       })
       setWeatherData(weatherByDate)
+    }
+  }
+
+  const loadProjectWeatherInfo = async () => {
+    const project = projects.find(p => p.id === selectedProject)
+    if (!project) return
+
+    setLoadingProjectWeather(true)
+    try {
+      // Fetch current weather if project has location
+      if (project.latitude && project.longitude) {
+        const weatherResult = await fetchRealtimeWeather(
+          project.latitude,
+          project.longitude,
+          project.id
+        )
+        
+        if (weatherResult) {
+          setProjectWeatherInfo(weatherResult)
+        }
+      }
+
+      // Also fetch project-specific thresholds
+      const { data: thresholds } = await supabase
+        .from('project_weather_thresholds')
+        .select('*')
+        .eq('project_id', selectedProject)
+        .single()
+
+      if (thresholds) {
+        setProjectWeatherInfo((prev: any) => ({
+          ...prev,
+          thresholds
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading project weather info:', error)
+    } finally {
+      setLoadingProjectWeather(false)
     }
   }
 
@@ -951,23 +1013,55 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
         durationHours
       })
 
-      // Create delay event
+      // Find or create a task for this project
+      let { data: tasks } = await supabase
+        .from('project_tasks')
+        .select('id')
+        .eq('project_id', selectedProject)
+        .limit(1)
+      
+      if (!tasks || tasks.length === 0) {
+        // Create a default task if none exists
+        const { data: newTask } = await supabase
+          .from('project_tasks')
+          .insert({
+            project_id: selectedProject,
+            name: 'Weather Delay Documentation',
+            description: 'Auto-generated task for weather delay logging',
+            status: 'in_progress'
+          })
+          .select('id')
+          .single()
+        tasks = newTask ? [newTask] : []
+      }
+      
+      if (!tasks || tasks.length === 0) {
+        throw new Error('Could not create or find task for delay logging')
+      }
+
+      // Create delay log entry
       const { data: delay, error: delayError } = await supabase
-        .from('delay_events')
+        .from('task_daily_logs')
         .insert({
-          project_id: selectedProject,
-          start_time: startDateTime.toISOString(),
-          end_time: parsedData.endTime ? endDateTime.toISOString() : null,
-          duration_hours: durationHours || parsedData.duration || null,
-          weather_condition: parsedData.weatherConditions.join(', '),
-          temperature: weatherData[format(date, 'yyyy-MM-dd')]?.temperature,
-          wind_speed: weatherData[format(date, 'yyyy-MM-dd')]?.wind_speed,
-          precipitation: weatherData[format(date, 'yyyy-MM-dd')]?.precipitation,
-          activities_affected: parsedData.activities || [],
-          supervisor_notes: parsedData.crewNotes || parsedData.summary || description || 'No notes provided',
-          verified: !!weatherData[format(date, 'yyyy-MM-dd')],
-          total_cost: 0, // Will be updated after crew/equipment are saved
-          threshold_violated: thresholdViolated
+          task_id: tasks[0].id,
+          log_date: format(date, 'yyyy-MM-dd'),
+          delayed: true,
+          delay_reason: parsedData.weatherConditions.join(', ') + (parsedData.crewNotes || parsedData.summary ? ': ' + (parsedData.crewNotes || parsedData.summary) : ''),
+          delay_category: 'weather',
+          weather_snapshot: {
+            conditions: parsedData.weatherConditions,
+            temperature: weatherData[format(date, 'yyyy-MM-dd')]?.temperature,
+            wind_speed: weatherData[format(date, 'yyyy-MM-dd')]?.wind_speed,
+            precipitation: weatherData[format(date, 'yyyy-MM-dd')]?.precipitation,
+            activities_affected: parsedData.activities || [],
+            threshold_violated: thresholdViolated
+          },
+          hours_worked: Math.max(0, 8 - (durationHours || parsedData.duration || 0)), // Assuming 8-hour workday
+          delay_start_time: parsedData.startTime ? startDateTime.toISOString() : null,
+          delay_end_time: parsedData.endTime ? endDateTime.toISOString() : null,
+          delay_duration_hours: durationHours || parsedData.duration || null,
+          estimated_cost: 0, // Will be updated after crew/equipment are saved
+          notes: parsedData.crewNotes || parsedData.summary || description || 'No notes provided'
         })
         .select()
         .single()
@@ -980,7 +1074,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
       // Save affected crew if selected
       if (parsedData.affectedCrew && parsedData.affectedCrew.length > 0 && delay) {
         const crewInserts = parsedData.affectedCrew.map((crew: any) => ({
-          delay_event_id: delay.id,
+          task_daily_log_id: delay.id, // Updated to reference task_daily_logs
           crew_member_id: crew.crew_member_id,
           hours_idled: crew.hours_idled,
           hourly_rate: crew.hourly_rate,
@@ -989,7 +1083,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
         }))
 
         const { error: crewInsertError } = await supabase
-          .from('delay_crew_affected')
+          .from('task_crew_logs') // Updated table name
           .insert(crewInserts)
         
         if (crewInsertError) {
@@ -1000,7 +1094,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
       // Save affected equipment if selected
       if (parsedData.affectedEquipment && parsedData.affectedEquipment.length > 0 && delay) {
         const equipmentInserts = parsedData.affectedEquipment.map((equip: any) => ({
-          delay_event_id: delay.id,
+          task_daily_log_id: delay.id, // Updated to reference task_daily_logs
           equipment_id: equip.equipment_id,
           hours_idled: equip.hours_idled,
           standby_rate: equip.hourly_rate, // Map hourly_rate to standby_rate
@@ -1008,7 +1102,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
         }))
 
         const { error: equipmentInsertError } = await supabase
-          .from('delay_equipment_affected')
+          .from('task_equipment_logs') // Updated table name
           .insert(equipmentInserts)
         
         if (equipmentInsertError) {
@@ -1021,15 +1115,11 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
       const totalEquipmentCost = parsedData.affectedEquipment?.reduce((sum: number, e: any) => sum + e.total_cost, 0) || 0
       const totalCost = totalCrewCost + totalEquipmentCost
       
-      // Update delay event with total cost and breakdown
+      // Update delay log with total cost and breakdown
       if (delay) {
         const updateData: any = {
-          total_cost: totalCost,
-          computed_labor_cost: totalCrewCost,
-          computed_equipment_cost: totalEquipmentCost,
-          computed_total_cost: totalCost,
-          crew_size: parsedData.affectedCrew?.length || 0,
-          equipment_idle_cost: totalEquipmentCost,
+          estimated_cost: totalCost,
+          notes: (delay.notes || '') + `\n\nCost Breakdown:\n- Labor: $${totalCrewCost}\n- Equipment: $${totalEquipmentCost}\n- Total: $${totalCost}`,
           cost_breakdown: {
             labor: totalCrewCost,
             equipment: totalEquipmentCost,
@@ -1053,7 +1143,7 @@ export function SmartDelayDocumentation({ projects, defaultProjectId, onComplete
         }
         
         const { error: updateError } = await supabase
-          .from('delay_events')
+          .from('task_daily_logs')
           .update(updateData)
           .eq('id', delay.id)
           

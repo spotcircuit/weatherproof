@@ -71,18 +71,18 @@ export class WeatherMonitorService {
       
       // Store weather reading
       const { error: weatherError } = await supabase
-        .from('weather_readings')
+        .from('project_weather')
         .insert({
           project_id: project.id,
-          timestamp: weather.timestamp,
+          collected_at: weather.timestamp,
           temperature: weather.temperature,
           wind_speed: weather.wind_speed,
-          precipitation: weather.precipitation,
+          precipitation_amount: weather.precipitation,
           humidity: weather.humidity,
           pressure: weather.pressure,
           visibility: weather.visibility,
           conditions: weather.conditions,
-          source: weather.source,
+          data_source: weather.source,
           station_id: weather.station.id,
           station_distance: weather.station.distance,
           raw_data: weather.raw_data
@@ -117,11 +117,17 @@ export class WeatherMonitorService {
     try {
       // Check if there's already an active delay
       const { data: activeDelay } = await supabase
-        .from('delay_events')
-        .select('*')
-        .eq('project_id', project.id)
-        .is('end_time', null)
-        .single()
+        .from('task_daily_logs')
+        .select(`
+          *,
+          project_tasks!inner(project_id)
+        `)
+        .eq('project_tasks.project_id', project.id)
+        .eq('delayed', true)
+        .is('delay_end_time', null)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
       
       if (activeDelay) {
         // Update existing delay
@@ -135,23 +141,54 @@ export class WeatherMonitorService {
       const overheadCost = project.daily_overhead
       const totalCost = laborCost + overheadCost
 
-      // Create new delay event
+      // Find or create a task for today's delay logging
+      const today = new Date().toISOString().split('T')[0]
+      let { data: tasks } = await supabase
+        .from('project_tasks')
+        .select('id')
+        .eq('project_id', project.id)
+        .limit(1)
+      
+      if (!tasks || tasks.length === 0) {
+        // Create a default task if none exists
+        const { data: newTask } = await supabase
+          .from('project_tasks')
+          .insert({
+            project_id: project.id,
+            name: 'Weather Monitoring',
+            description: 'Auto-generated task for weather delay logging',
+            status: 'in_progress'
+          })
+          .select('id')
+          .single()
+        tasks = newTask ? [newTask] : []
+      }
+      
+      if (!tasks || tasks.length === 0) {
+        throw new Error('Could not create or find task for delay logging')
+      }
+
+      // Create new delay log entry
       const { data: delayEvent, error } = await supabase
-        .from('delay_events')
+        .from('task_daily_logs')
         .insert({
-          project_id: project.id,
-          start_time: new Date().toISOString(),
-          weather_condition: violations.map(v => v.type).join(', '),
-          threshold_violated: violations,
-          affected_activities: this.getAffectedActivities((project as any).project_type || 'general', violations),
+          task_id: tasks[0].id,
+          log_date: today,
+          delayed: true,
+          delay_reason: violations.map(v => v.type).join(', '),
+          delay_category: 'weather',
+          weather_snapshot: {
+            conditions: violations.map(v => v.type).join(', '),
+            threshold_violated: violations,
+            affected_activities: this.getAffectedActivities((project as any).project_type || 'general', violations),
+            temperature: weather.temperature,
+            wind_speed: weather.wind_speed,
+            precipitation: weather.precipitation
+          },
+          hours_worked: Math.max(0, hoursInDay - hoursInDay), // 0 hours worked during delay
           estimated_cost: totalCost,
-          labor_hours_lost: hoursInDay,
-          crew_size: project.crew_size,
-          labor_cost: laborCost,
-          equipment_cost: 0, // TODO: Add equipment tracking
-          overhead_cost: overheadCost,
-          total_cost: totalCost,
-          auto_generated: true
+          notes: `Auto-generated weather delay: ${violations.map(v => v.type).join(', ')}`,
+          delay_start_time: new Date().toISOString()
         })
         .select()
         .single()
@@ -213,11 +250,17 @@ export class WeatherMonitorService {
     try {
       // Get active delay
       const { data: activeDelay } = await supabase
-        .from('delay_events')
-        .select('*')
-        .eq('project_id', project.id)
-        .is('end_time', null)
-        .single()
+        .from('task_daily_logs')
+        .select(`
+          *,
+          project_tasks!inner(project_id)
+        `)
+        .eq('project_tasks.project_id', project.id)
+        .eq('delayed', true)
+        .is('delay_end_time', null)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
       
       if (!activeDelay) return
 
@@ -230,7 +273,7 @@ export class WeatherMonitorService {
       if (violations.length === 0) {
         // End the delay
         const endTime = new Date()
-        const startTime = new Date(activeDelay.start_time)
+        const startTime = new Date(activeDelay.delay_start_time)
         const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
         
         // Update costs based on actual duration
@@ -239,13 +282,12 @@ export class WeatherMonitorService {
         const totalCost = laborCost + overheadCost
 
         await supabase
-          .from('delay_events')
+          .from('task_daily_logs')
           .update({
-            end_time: endTime.toISOString(),
-            duration_hours: durationHours,
-            labor_cost: laborCost,
-            overhead_cost: overheadCost,
-            total_cost: totalCost
+            delay_end_time: endTime.toISOString(),
+            delay_duration_hours: durationHours,
+            estimated_cost: totalCost,
+            notes: (activeDelay.notes || '') + `\nDelay ended at ${endTime.toISOString()}. Duration: ${durationHours.toFixed(1)} hours.`
           })
           .eq('id', activeDelay.id)
 

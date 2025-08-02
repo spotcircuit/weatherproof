@@ -139,50 +139,73 @@ export default function DelayDocumentationForm({
     try {
       const costs = calculateCosts()
       
+      // Find or create a task for this project
+      let { data: tasks } = await supabase
+        .from('project_tasks')
+        .select('id')
+        .eq('project_id', project.id)
+        .limit(1)
+      
+      if (!tasks || tasks.length === 0) {
+        // Create a default task if none exists
+        const { data: newTask } = await supabase
+          .from('project_tasks')
+          .insert({
+            project_id: project.id,
+            name: 'Weather Delay Documentation',
+            description: 'Auto-generated task for weather delay logging',
+            status: 'in_progress'
+          })
+          .select('id')
+          .single()
+        tasks = newTask ? [newTask] : []
+      }
+      
+      if (!tasks || tasks.length === 0) {
+        throw new Error('Could not create or find task for delay logging')
+      }
+
       const delayData = {
-        project_id: project.id,
-        start_time: new Date().toISOString(),
-        weather_condition: selectedConditions.join(', '),
+        task_id: tasks[0].id,
+        log_date: format(new Date(), 'yyyy-MM-dd'),
+        delayed: true,
         delay_reason: notes || 'Weather conditions exceeded safe work thresholds',
-        crew_size: parseInt(crewAffected),
-        hourly_rate: project.hourly_rate,
-        labor_hours_lost: costs.laborHours,
-        labor_cost: costs.laborCost,
-        overhead_cost: costs.overheadCost,
-        total_cost: costs.totalCost,
-        
-        // New insurance fields
-        precipitation_inches: weatherData.precipitation,
-        wind_speed_mph: weatherData.windSpeed,
-        temperature_high: weatherData.temperature,
-        temperature_low: weatherData.temperature,
-        activities_affected: {
-          activities: affectedActivities,
-          other: notes
+        delay_category: 'weather',
+        weather_snapshot: {
+          conditions: selectedConditions,
+          precipitation_inches: weatherData.precipitation,
+          wind_speed_mph: weatherData.windSpeed,
+          temperature_high: weatherData.temperature,
+          temperature_low: weatherData.temperature,
+          activities_affected: {
+            activities: affectedActivities,
+            other: notes
+          },
+          noaa_report_url: `https://api.weather.gov/stations/${weatherData.station.id}/observations/latest`,
+          station_id: weatherData.station.id,
+          station_distance: weatherData.station.distance
         },
-        noaa_report_url: `https://api.weather.gov/stations/${weatherData.station.id}/observations/latest`,
-        
-        // Metadata
-        verified: true,
-        delay_type: 'weather',
-        crew_affected: parseInt(crewAffected),
-        supervisor_notes: notes
+        hours_worked: Math.max(0, 8 - costs.laborHours), // Assuming 8-hour workday
+        delay_start_time: new Date().toISOString(),
+        delay_duration_hours: costs.laborHours,
+        estimated_cost: costs.totalCost,
+        notes: notes || 'Weather conditions exceeded safe work thresholds'
       }
       
       // Save weather reading
-      const { error: weatherError } = await supabase.from('weather_readings').insert({
+      const { error: weatherError } = await supabase.from('project_weather').insert({
         project_id: project.id,
-        timestamp: weatherData.timestamp,
+        collected_at: weatherData.timestamp,
         temperature: weatherData.temperature,
         wind_speed: weatherData.windSpeed,
         wind_direction: weatherData.windDirection ? Math.round(weatherData.windDirection) : null, // Round to integer
-        precipitation: weatherData.precipitation,
+        precipitation_amount: weatherData.precipitation,
         humidity: weatherData.humidity,
         pressure: weatherData.pressure,
         visibility: weatherData.visibility,
         conditions: weatherData.conditions,
-        source: 'NOAA',
-        source_station_id: weatherData.station.id,
+        data_source: 'NOAA',
+        station_id: weatherData.station.id,
         raw_data: {
           ...weatherData.raw,
           station_distance_miles: weatherData.station.distance,
@@ -196,9 +219,9 @@ export default function DelayDocumentationForm({
         throw new Error(`Failed to save weather reading: ${weatherError.message || JSON.stringify(weatherError)}`)
       }
       
-      // Create delay event
+      // Create delay log entry
       const { error: delayError } = await supabase
-        .from('delay_events')
+        .from('task_daily_logs')
         .insert(delayData)
       
       if (delayError) {

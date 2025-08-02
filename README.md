@@ -78,6 +78,47 @@ weatherProof/
 
 Optimized for [Vercel](https://vercel.com) deployment. See [deployment guide](docs/developer-setup-guide.md#deployment) for details.
 
+## Development Progress
+
+### ✅ Completed Features
+- [x] Create database schema for project tasks with weather sensitivity
+- [x] Define task templates for different project types
+- [x] Implement task generation based on project type
+- [x] Create crew/equipment assignment logic for tasks
+- [x] Implement weather threshold checking at task level
+- [x] Create daily task delay evaluation system
+- [x] Build task management UI components
+- [x] Add forecast delay risk awareness to tasks
+- [x] Implement daily delay evaluation cron job
+- [x] Add blocking task dependencies
+- [x] Create subcontractor update system
+- [x] Prepare insurance claim export structure
+- [x] Build Project Dashboard with weather risk indicators
+- [x] Create Task Timeline/Kanban View
+- [x] Create Daily Delay Report View
+- [x] Create Daily Log Submission UI
+- [x] Build Weather Alerts Panel
+- [x] Create Claim Report Generator
+- [x] Fix all createServerClient imports to use createServerClientNext
+- [x] Remove obsolete code references (assigned_crew, assigned_equipment)
+- [x] Replace all weather_readings references with project_weather
+- [x] Replace all delay_events references with task_daily_logs
+- [x] Fix environment variable references
+- [x] Successfully run npm build
+
+### 🚧 Pending Features
+- [ ] Build Crew & Equipment Assignment Modals
+- [ ] Build Subcontractor Submission Review UI
+- [ ] Create Task Import Wizard for CSV/ClickUp
+- [ ] Build Task Delay Analytics Reports
+- [ ] Create Weather vs Delay Correlation Report
+- [ ] Build Project Risk Heatmap
+- [ ] Delete old seeders and test scripts
+- [ ] Audit and remove unused utility modules
+- [ ] Consolidate weather polling logic
+- [ ] Document current architecture
+- [ ] Run migration to drop obsolete tables
+
 ## License
 
 Proprietary - All rights reserved

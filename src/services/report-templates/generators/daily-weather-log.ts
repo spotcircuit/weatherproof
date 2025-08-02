@@ -48,7 +48,7 @@ export class DailyWeatherLogGenerator extends BaseReportGenerator {
       const weatherGrid = [
         ['Temperature:', `${latestWeather.temperature?.toFixed(0) || 'N/A'}°F`],
         ['Wind Speed:', `${latestWeather.wind_speed?.toFixed(0) || 'N/A'} mph`],
-        ['Precipitation:', `${latestWeather.precipitation?.toFixed(2) || '0.00'} inches`],
+        ['Precipitation:', `${latestWeather.precipitation_amount?.toFixed(2) || '0.00'} inches`],
         ['Conditions:', latestWeather.conditions || 'Clear'],
         ['Humidity:', `${latestWeather.humidity || 'N/A'}%`],
         ['Visibility:', `${latestWeather.visibility?.toFixed(1) || 'N/A'} miles`]
@@ -76,11 +76,11 @@ export class DailyWeatherLogGenerator extends BaseReportGenerator {
       this.doc.setFontSize(9)
       this.doc.setTextColor(100, 100, 100)
       this.doc.text(
-        `Source: ${latestWeather.source || 'NOAA'} Station ${latestWeather.source_station_id || 'N/A'} (${latestWeather.station_distance_miles?.toFixed(1) || 'N/A'} miles away)`,
+        `Source: ${latestWeather.data_source || 'NOAA'} Station ${latestWeather.station_id || 'N/A'} (${latestWeather.station_distance?.toFixed(1) || 'N/A'} miles away)`,
         20, this.currentY
       )
       this.doc.text(
-        `Last Updated: ${this.formatDate(latestWeather.timestamp, 'HH:mm')}`,
+        `Last Updated: ${this.formatDate(latestWeather.collected_at, 'HH:mm')}`,
         20, this.currentY + 5
       )
       this.doc.setTextColor(0, 0, 0)

@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
     const delaysWithWeather = []
     for (const delay of delayEvents || []) {
       const { data: weatherData } = await supabase
-        .from('weather_readings')
+        .from('project_weather')
         .select('*')
         .eq('project_id', projectId)
-        .gte('timestamp', delay.start_time)
-        .lte('timestamp', delay.end_time || delay.start_time)
-        .order('timestamp')
+        .gte('collected_at', delay.start_time)
+        .lte('collected_at', delay.end_time || delay.start_time)
+        .order('collected_at')
       
       // Get photos for this delay
       const { data: photos } = await supabase
@@ -70,12 +70,12 @@ export async function POST(request: NextRequest) {
       delaysWithWeather.push({
         ...delay,
         weather_events: weatherData?.map(w => ({
-          date: format(new Date(w.timestamp), 'yyyy-MM-dd'),
-          time: format(new Date(w.timestamp), 'HH:mm'),
+          date: format(new Date(w.collected_at), 'yyyy-MM-dd'),
+          time: format(new Date(w.collected_at), 'HH:mm'),
           condition: w.conditions,
-          value: w.wind_speed || w.precipitation || w.temperature,
+          value: w.wind_speed || w.precipitation_amount || w.temperature,
           threshold: 0, // TODO: Get from project thresholds
-          source: `${w.source} - Station ${w.station_id}`,
+          source: `${w.data_source} - Station ${w.station_id}`,
           station_distance: w.station_distance
         })) || [],
         photos: photos ? photos.map(photo => ({

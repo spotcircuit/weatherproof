@@ -101,6 +101,8 @@ export default function DocumentPage() {
   // Check if coming from reports or quick action
   const action = searchParams.get('action')
   const projectId = searchParams.get('project')
+  const date = searchParams.get('date')
+  const delayAnnouncement = searchParams.get('announcement')
   const showWizardDirectly = action === 'document-delay' || projects.length === 1
 
   return (
@@ -282,6 +284,8 @@ export default function DocumentPage() {
                 <SmartDelayDocumentation 
                   projects={projects}
                   defaultProjectId={projectId}
+                  defaultDate={date}
+                  defaultAnnouncement={delayAnnouncement}
                   onComplete={handleComplete}
                 />
               </CardContent>

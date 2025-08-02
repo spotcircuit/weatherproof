@@ -19,6 +19,7 @@ import {
 import { useState } from "react"
 import { createClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { useCompany } from "@/contexts/company-context"
 
 interface NavigationItem {
   name: string
@@ -40,6 +41,7 @@ const navigation: NavigationItem[] = [
 export default function NavigationHeader() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { company, loading } = useCompany()
 
   // Generate breadcrumbs
   const generateBreadcrumbs = () => {
@@ -88,7 +90,7 @@ export default function NavigationHeader() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   WeatherProof
                 </h1>
-                <p className="text-xs text-gray-500">Demo Construction Co</p>
+                <p className="text-xs text-gray-500">{loading ? 'Loading...' : (company?.name || 'Demo Construction Co')}</p>
               </div>
               <div className="sm:hidden">
                 <h1 className="text-lg font-bold text-blue-600">WP</h1>

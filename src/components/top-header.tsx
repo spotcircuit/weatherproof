@@ -78,13 +78,17 @@ export default function TopHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  My Profile
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    My Profile
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Account Settings
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 

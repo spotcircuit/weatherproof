@@ -57,14 +57,17 @@ export default function WeatherDashboard({ projects, weatherAlerts }: WeatherDas
     }
   }
 
-  const getWeatherIcon = (conditions: string) => {
-    const lowerConditions = conditions?.toLowerCase() || ''
-    if (lowerConditions.includes('rain') || lowerConditions.includes('shower')) return '🌧️'
-    if (lowerConditions.includes('snow')) return '🌨️'
-    if (lowerConditions.includes('cloud') || lowerConditions.includes('overcast')) return '☁️'
-    if (lowerConditions.includes('sun') || lowerConditions.includes('clear')) return '☀️'
-    if (lowerConditions.includes('storm') || lowerConditions.includes('thunder')) return '⛈️'
-    if (lowerConditions.includes('fog') || lowerConditions.includes('mist')) return '🌫️'
+  const getWeatherIcon = (conditions: any) => {
+    // Ensure conditions is a string
+    const conditionsStr = String(conditions || '').toLowerCase()
+    if (!conditionsStr) return '🌤️'
+    
+    if (conditionsStr.includes('rain') || conditionsStr.includes('shower')) return '🌧️'
+    if (conditionsStr.includes('snow')) return '🌨️'
+    if (conditionsStr.includes('cloud') || conditionsStr.includes('overcast')) return '☁️'
+    if (conditionsStr.includes('sun') || conditionsStr.includes('clear')) return '☀️'
+    if (conditionsStr.includes('storm') || conditionsStr.includes('thunder')) return '⛈️'
+    if (conditionsStr.includes('fog') || conditionsStr.includes('mist')) return '🌫️'
     return '🌤️'
   }
 

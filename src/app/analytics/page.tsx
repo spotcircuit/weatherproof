@@ -17,18 +17,23 @@ export default async function AnalyticsPage() {
 
   // Fetch delay events for the last 30 days
   const { data: delayEvents } = await supabase
-    .from("delay_events")
+    .from("task_daily_logs")
     .select(`
       *,
-      projects!inner(
+      project_tasks!inner(
+        project_id,
         name,
-        user_id,
-        project_type
+        projects!inner(
+          name,
+          user_id,
+          project_type
+        )
       )
     `)
-    .eq("projects.user_id", user.id)
-    .gte("start_time", thirtyDaysAgo.toISOString())
-    .order("start_time", { ascending: true })
+    .eq("project_tasks.projects.user_id", user.id)
+    .eq("delayed", true)
+    .gte("log_date", thirtyDaysAgo.toISOString().split('T')[0])
+    .order("log_date", { ascending: true })
 
   // Fetch all projects for the user
   const { data: projects } = await supabase
@@ -38,7 +43,7 @@ export default async function AnalyticsPage() {
 
   // Fetch weather readings for trend analysis
   const { data: weatherReadings } = await supabase
-    .from("weather_readings")
+    .from("project_weather")
     .select(`
       *,
       projects!inner(
@@ -47,8 +52,8 @@ export default async function AnalyticsPage() {
       )
     `)
     .eq("projects.user_id", user.id)
-    .gte("timestamp", thirtyDaysAgo.toISOString())
-    .order("timestamp", { ascending: true })
+    .gte("collected_at", thirtyDaysAgo.toISOString())
+    .order("collected_at", { ascending: true })
 
   return (
     <AnalyticsClient 

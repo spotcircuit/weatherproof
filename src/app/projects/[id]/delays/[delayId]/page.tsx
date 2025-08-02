@@ -37,12 +37,12 @@ export default async function DelayDetailPage({
 
   // Fetch weather readings around the delay time
   const { data: weatherData } = await supabase
-    .from("weather_readings")
+    .from("project_weather")
     .select("*")
     .eq("project_id", id)
-    .gte("timestamp", new Date(delay.start_time).toISOString())
-    .lte("timestamp", delay.end_time || new Date().toISOString())
-    .order("timestamp", { ascending: true })
+    .gte("collected_at", new Date(delay.start_time).toISOString())
+    .lte("collected_at", delay.end_time || new Date().toISOString())
+    .order("collected_at", { ascending: true })
 
   // Fetch photos if any
   const { data: photos } = await supabase

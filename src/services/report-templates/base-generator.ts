@@ -60,15 +60,19 @@ export abstract class BaseReportGenerator {
   
   protected async fetchDelayEvents(projectId: string, startDate: Date, endDate: Date) {
     const { data, error } = await this.supabase
-      .from('delay_events')
+      .from('task_daily_logs')
       .select(`
         *,
-        weather_readings (*)
+        project_tasks!inner(
+          project_id,
+          name
+        )
       `)
-      .eq('project_id', projectId)
-      .gte('start_time', startDate.toISOString())
-      .lte('start_time', endDate.toISOString())
-      .order('start_time', { ascending: true })
+      .eq('project_tasks.project_id', projectId)
+      .eq('delayed', true)
+      .gte('log_date', startDate.toISOString().split('T')[0])
+      .lte('log_date', endDate.toISOString().split('T')[0])
+      .order('log_date', { ascending: true })
     
     if (error) throw error
     return data
@@ -76,12 +80,12 @@ export abstract class BaseReportGenerator {
   
   protected async fetchWeatherData(projectId: string, startDate: Date, endDate: Date) {
     const { data, error } = await this.supabase
-      .from('weather_readings')
+      .from('project_weather')
       .select('*')
       .eq('project_id', projectId)
-      .gte('timestamp', startDate.toISOString())
-      .lte('timestamp', endDate.toISOString())
-      .order('timestamp', { ascending: true })
+      .gte('collected_at', startDate.toISOString())
+      .lte('collected_at', endDate.toISOString())
+      .order('collected_at', { ascending: true })
     
     if (error) throw error
     return data
@@ -93,7 +97,7 @@ export abstract class BaseReportGenerator {
     const { data, error } = await this.supabase
       .from('photos')
       .select('*')
-      .in('delay_event_id', delayIds)
+      .in('task_daily_log_id', delayIds) // Updated to reference task_daily_logs
       .order('taken_at', { ascending: true })
     
     if (error) throw error
@@ -184,10 +188,10 @@ export abstract class BaseReportGenerator {
     total: number
   } {
     return delays.reduce((acc, delay) => ({
-      labor: acc.labor + (delay.labor_cost || 0),
-      equipment: acc.equipment + (delay.equipment_cost || 0),
-      overhead: acc.overhead + (delay.overhead_cost || 0),
-      total: acc.total + (delay.total_cost || 0)
+      labor: acc.labor + (delay.estimated_cost || 0), // task_daily_logs doesn't separate labor/equipment
+      equipment: acc.equipment + 0, // Would need separate equipment tracking
+      overhead: acc.overhead + 0, // Would need separate overhead tracking
+      total: acc.total + (delay.estimated_cost || 0)
     }), { labor: 0, equipment: 0, overhead: 0, total: 0 })
   }
   
@@ -199,8 +203,8 @@ export abstract class BaseReportGenerator {
       violations.push(`Wind: ${weather.wind_speed} mph exceeds ${thresholds.wind_speed} mph`)
     }
     
-    if (thresholds.precipitation && weather.precipitation > thresholds.precipitation) {
-      violations.push(`Rain: ${weather.precipitation}" exceeds ${thresholds.precipitation}"`)
+    if (thresholds.precipitation && weather.precipitation_amount > thresholds.precipitation) {
+      violations.push(`Rain: ${weather.precipitation_amount}" exceeds ${thresholds.precipitation}"`)
     }
     
     if (thresholds.temperature_min && weather.temperature < thresholds.temperature_min) {

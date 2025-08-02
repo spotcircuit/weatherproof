@@ -70,18 +70,18 @@ export async function POST(request: NextRequest) {
         
         // Store weather reading
         await supabase
-          .from('weather_readings')
+          .from('project_weather')
           .insert({
             project_id: project.id,
-            timestamp: weather.timestamp,
+            collected_at: weather.timestamp,
             temperature: weather.temperature,
             wind_speed: weather.wind_speed,
-            precipitation: weather.precipitation,
+            precipitation_amount: weather.precipitation,
             humidity: weather.humidity,
             pressure: weather.pressure,
             visibility: weather.visibility,
             conditions: weather.conditions,
-            source: weather.source,
+            data_source: weather.source,
             station_id: weather.station.id,
             station_distance: weather.station.distance,
             raw_data: weather.raw_data

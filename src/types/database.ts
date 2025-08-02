@@ -19,6 +19,7 @@ export interface User {
 export interface Project {
   id: string
   user_id: string
+  company_id?: string
   name: string
   description: string | null
   address: string
@@ -28,26 +29,16 @@ export interface Project {
   start_date: string
   end_date: string | null
   active: boolean
+  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
   project_type: string
   crew_size: number
   hourly_rate: number
   daily_overhead: number
-  weather_thresholds: {
-    wind_speed?: number
-    precipitation?: number
-    temperature_min?: number
-    temperature_max?: number
-    humidity_max?: number
-    visibility_min?: number
-  }
   external_id: string | null
   external_source: string | null
   metadata: any
   created_at: string
   updated_at: string
-  weather_collection_enabled?: boolean
-  weather_collection_frequency?: number
-  weather_last_collected_at?: string
   deadline_date?: string | null
   deadline_type?: 'contract' | 'milestone' | 'weather_window' | 'permit_expiry' | 'insurance_claim' | 'other' | null
   deadline_notes?: string | null
